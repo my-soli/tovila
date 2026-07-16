@@ -124,6 +124,23 @@ table.list-table th, table.editor-table th {
   color: var(--muted);
 }
 
+.window-badge {
+  font-size: 0.8rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.window-open {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.window-closed {
+  color: #9c3b2e;
+  border-color: #f3b9b0;
+}
+
 .resolve-form {
   margin: 8px 0 20px;
 }

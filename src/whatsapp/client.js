@@ -1,11 +1,7 @@
 const WHATSAPP_API_VERSION = "v21.0";
 
-/**
- * Sends a plain-text WhatsApp message via the Meta Business Cloud API.
- * `to` must be a phone number in international format with no leading "+"
- * (this is the same format WhatsApp sends back in `message.from`).
- */
-async function sendWhatsAppMessage(to, text) {
+/** POSTs a message body to the Cloud API's /messages endpoint, shared by text and template sends. */
+async function postToWhatsApp(body) {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
 
@@ -23,12 +19,7 @@ async function sendWhatsAppMessage(to, text) {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body: text },
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -39,4 +30,22 @@ async function sendWhatsAppMessage(to, text) {
   return res.json();
 }
 
-module.exports = { sendWhatsAppMessage };
+/**
+ * Sends a plain-text WhatsApp message via the Meta Business Cloud API.
+ * `to` must be a phone number in international format with no leading "+"
+ * (this is the same format WhatsApp sends back in `message.from`).
+ *
+ * Only valid within 24h of the customer's last inbound message — see
+ * src/services/messagingWindow.js and src/whatsapp/templates.js for the
+ * template-message path required outside that window.
+ */
+async function sendWhatsAppMessage(to, text) {
+  return postToWhatsApp({
+    messaging_product: "whatsapp",
+    to,
+    type: "text",
+    text: { body: text },
+  });
+}
+
+module.exports = { sendWhatsAppMessage, postToWhatsApp };

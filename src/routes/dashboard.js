@@ -6,6 +6,7 @@ const {
 } = require("../services/conversation");
 const { listLeads } = require("../services/leads");
 const { listSellers, updateSeller } = require("../services/sellers");
+const { isWithin24hWindow } = require("../services/messagingWindow");
 
 const router = express.Router();
 
@@ -47,7 +48,9 @@ router.get("/conversations/:id", async (req, res) => {
   // reflect that in the nav/switcher regardless of the ?sellerId= in the URL.
   res.locals.currentSeller = conversation.seller;
 
-  res.render("conversation-detail", { conversation });
+  const withinWindow = await isWithin24hWindow(conversation.id);
+
+  res.render("conversation-detail", { conversation, withinWindow });
 });
 
 // Resolves a flagged conversation back to normal handling.

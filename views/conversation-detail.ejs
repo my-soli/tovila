@@ -4,7 +4,10 @@
 <h1><%= conversation.customerPhone %></h1>
 <p class="hint">
   <%= conversation.seller.name %> &middot;
-  <span class="status-badge status-<%= conversation.status %>"><%= conversation.status.replace('_', ' ') %></span>
+  <span class="status-badge status-<%= conversation.status %>"><%= conversation.status.replace('_', ' ') %></span> &middot;
+  <span class="window-badge <%= withinWindow ? 'window-open' : 'window-closed' %>">
+    <%= withinWindow ? 'Within 24h window' : 'Outside 24h window — template required' %>
+  </span>
 </p>
 
 <% if (conversation.status === 'needs_attention') { %>
