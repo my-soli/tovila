@@ -1,0 +1,30 @@
+<%- include('partials/header') %>
+
+<h1>Conversations</h1>
+
+<% if (conversations.length === 0) { %>
+  <p class="empty">No conversations yet. Once WhatsApp messages come in (or you run <code>npm run seed</code>), they'll show up here.</p>
+<% } else { %>
+  <table class="list-table">
+    <thead>
+      <tr><th>Customer</th><th>Last message</th><th>When</th></tr>
+    </thead>
+    <tbody>
+      <% conversations.forEach(c => { %>
+        <tr class="clickable-row" onclick="window.location='/conversations/<%= c.id %>'">
+          <td><%= c.customerPhone %></td>
+          <td class="preview">
+            <% if (c.lastMessage) { %>
+              <%= c.lastMessage.sender === 'agent' ? 'You: ' : '' %><%= c.lastMessage.content %>
+            <% } else { %>
+              &mdash;
+            <% } %>
+          </td>
+          <td class="nowrap"><%= new Date(c.lastActivityAt).toLocaleString() %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
+
+<%- include('partials/footer') %>

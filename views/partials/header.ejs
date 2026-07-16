@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tovila Dashboard</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Tovila</div>
+    <% if (typeof currentSeller !== 'undefined') { %>
+      <nav>
+        <a href="/?sellerId=<%= currentSeller.id %>">Conversations</a>
+        <a href="/leads?sellerId=<%= currentSeller.id %>">Leads</a>
+        <a href="/products?sellerId=<%= currentSeller.id %>">Products &amp; FAQs</a>
+      </nav>
+      <select
+        class="seller-switcher"
+        onchange="const u = new URL(location.href); u.searchParams.set('sellerId', this.value); location.href = u.toString();"
+      >
+        <% sellers.forEach(s => { %>
+          <option value="<%= s.id %>" <%= s.id === currentSeller.id ? 'selected' : '' %>><%= s.name %></option>
+        <% }) %>
+      </select>
+    <% } %>
+  </header>
+  <main class="container">

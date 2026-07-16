@@ -1,0 +1,18 @@
+<%- include('partials/header') %>
+
+<p><a href="/?sellerId=<%= conversation.seller.id %>">&larr; Back to conversations</a></p>
+<h1><%= conversation.customerPhone %></h1>
+<p class="hint"><%= conversation.seller.name %></p>
+
+<div class="thread">
+  <% conversation.messages.forEach(m => { %>
+    <div class="bubble <%= m.sender === 'customer' ? 'from-customer' : 'from-agent' %>">
+      <div class="bubble-meta">
+        <%= m.sender === 'customer' ? 'Customer' : 'Tovila' %> &middot; <%= new Date(m.timestamp).toLocaleString() %>
+      </div>
+      <div class="bubble-text"><%= m.content %></div>
+    </div>
+  <% }) %>
+</div>
+
+<%- include('partials/footer') %>

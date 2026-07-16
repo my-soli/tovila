@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Seller {
+  id             String   @id @default(uuid())
+  name           String
+  whatsappNumber String   @unique @map("whatsapp_number")
+  products       Json
+  deliveryInfo   Json     @map("delivery_info")
+  faqs           Json
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversations Conversation[]
+
+  @@map("sellers")
+}
+
+model Conversation {
+  id            String   @id @default(uuid())
+  sellerId      String   @map("seller_id")
+  seller        Seller   @relation(fields: [sellerId], references: [id])
+  customerPhone String   @map("customer_phone")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  messages Message[]
+  leads    Lead[]
+
+  @@index([customerPhone])
+  @@index([sellerId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  sender         String // "customer" | "agent"
+  content        String
+  timestamp      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model Lead {
+  id               String       @id @default(uuid())
+  conversationId   String       @map("conversation_id")
+  conversation     Conversation @relation(fields: [conversationId], references: [id])
+  item             String
+  quantity         Int
+  variant          String?
+  deliveryLocation String       @map("delivery_location")
+  customerName     String       @map("customer_name")
+  status           String       @default("new")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  @@index([conversationId])
+  @@map("leads")
+}

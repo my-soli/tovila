@@ -1,0 +1,74 @@
+<%- include('partials/header') %>
+
+<h1>Products &amp; FAQs</h1>
+<p class="hint">Editing "<%= seller.name %>" (<%= seller.whatsappNumber %>). Changes apply immediately to the agent's next reply.</p>
+
+<% if (saved) { %><p class="success">Saved.</p><% } %>
+
+<form method="POST" action="/products?sellerId=<%= seller.id %>" class="editor-form">
+  <section>
+    <h2>Seller info</h2>
+    <label>Name
+      <input type="text" name="sellerName" value="<%= seller.name %>" />
+    </label>
+  </section>
+
+  <section>
+    <h2>Delivery</h2>
+    <div class="delivery-grid">
+      <label>Nairobi fee (KES)
+        <input type="number" name="nairobiFee" value="<%= seller.deliveryInfo.nairobi.feeKES %>" />
+      </label>
+      <label>Nairobi ETA
+        <input type="text" name="nairobiEta" value="<%= seller.deliveryInfo.nairobi.eta %>" />
+      </label>
+      <label>Upcountry fee (KES)
+        <input type="number" name="upcountryFee" value="<%= seller.deliveryInfo.upcountry.feeKES %>" />
+      </label>
+      <label>Upcountry ETA
+        <input type="text" name="upcountryEta" value="<%= seller.deliveryInfo.upcountry.eta %>" />
+      </label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Products</h2>
+    <table class="editor-table">
+      <thead>
+        <tr><th>Name</th><th>Price (KES)</th><th>Sizes (comma-separated)</th><th>Stock</th></tr>
+      </thead>
+      <tbody>
+        <% const productRows = seller.products.concat([{}, {}]); %>
+        <% productRows.forEach(p => { %>
+          <tr>
+            <td><input type="text" name="productName" value="<%= p.name || '' %>" /></td>
+            <td><input type="number" name="productPrice" value="<%= p.priceKES || '' %>" /></td>
+            <td><input type="text" name="productSizes" value="<%= (p.sizes || []).join(', ') %>" /></td>
+            <td><input type="number" name="productStock" value="<%= p.stock || '' %>" /></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <p class="hint">Leave a row's name blank to remove it. Use the blank rows at the bottom to add new products.</p>
+  </section>
+
+  <section>
+    <h2>FAQs</h2>
+    <table class="editor-table">
+      <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+      <tbody>
+        <% const faqRows = seller.faqs.concat([{}, {}]); %>
+        <% faqRows.forEach(f => { %>
+          <tr>
+            <td><input type="text" name="faqQuestion" value="<%= f.question || '' %>" /></td>
+            <td><input type="text" name="faqAnswer" value="<%= f.answer || '' %>" /></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </section>
+
+  <button type="submit">Save changes</button>
+</form>
+
+<%- include('partials/footer') %>
