@@ -7,6 +7,7 @@ const {
   findMessageBySourceId,
 } = require("../../services/conversation");
 const { getSellerByWhatsappNumber } = require("../../services/sellers");
+const { isRateLimited, MAX_MESSAGES_PER_HOUR } = require("../../services/rateLimit");
 const { generateReply } = require("../../agent/core");
 const { sendWhatsAppMessage } = require("../../whatsapp/client");
 
@@ -65,8 +66,17 @@ async function processInboundMessage(body) {
   }
 
   for (const message of messages) {
+    const from = message.from; // sender's WhatsApp number, e.g. "2547XXXXXXXX"
+    if (!from) continue;
+
+    // Cheap DB count, checked before any Claude call — protects against a
+    // single abusive number (regardless of which seller) running up costs.
+    if (await isRateLimited(from)) {
+      await recordRateLimitedMessage(seller, message);
+      continue;
+    }
+
     if (message.type === "text") {
-      const from = message.from; // sender's WhatsApp number, e.g. "2547XXXXXXXX"
       const text = message.text?.body?.trim();
       if (!text) continue;
 
@@ -75,6 +85,34 @@ async function processInboundMessage(body) {
       await handleMediaMessage(seller, message);
     }
   }
+}
+
+/**
+ * A number over the rate limit still gets its message recorded (for the
+ * record / dashboard visibility) but no reply is generated — dropping the
+ * expensive part (Claude calls, WhatsApp sends) rather than crashing or
+ * silently vanishing the message entirely.
+ */
+async function recordRateLimitedMessage(seller, message) {
+  if (message.id && (await findMessageBySourceId(message.id))) return;
+
+  const from = message.from;
+  const type = message.type;
+  const content =
+    type === "text"
+      ? message.text?.body?.trim() || ""
+      : `[Customer sent ${MEDIA_LABELS[type] || "something"}]`;
+
+  const conversation = await getOrCreateConversation(seller.id, from);
+  await saveMessage(conversation.id, "customer", content, {
+    sourceMessageId: message.id,
+    mediaType: type !== "text" ? type : null,
+    mediaId: type !== "text" ? message[type]?.id || null : null,
+  });
+
+  console.warn(
+    `Rate limit exceeded for ${from} (> ${MAX_MESSAGES_PER_HOUR} messages/hour) — message saved but no reply generated.`
+  );
 }
 
 /** Sends a WhatsApp reply, degrading gracefully (log only) while credentials are placeholders. */
