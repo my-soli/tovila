@@ -25,6 +25,8 @@ function buildSystemPrompt(seller) {
 
 You are replying to customers over WhatsApp on the seller's behalf. Be warm, concise, and accurate — a few short sentences per reply, no markdown formatting (this is a chat app, not a document).
 
+Customers may write in English, Swahili, Sheng, or a natural mix of these — this is completely normal for this market. Always reply in whichever language or mix the customer used; don't switch to a different language than they did, and don't treat Swahili/Sheng as a sign something needs escalation.
+
 PRODUCT CATALOG:
 ${catalog}
 
