@@ -4,6 +4,7 @@ const express = require("express");
 const webhookRouter = require("./routes/webhook");
 const dashboardRouter = require("./routes/dashboard");
 const { dashboardAuth } = require("./middleware/auth");
+const { startWorker } = require("./jobs/worker");
 
 const app = express();
 app.use(express.json());
@@ -28,5 +29,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Tovila server listening on port ${PORT}`);
 });
+
+startWorker();
 
 module.exports = app;

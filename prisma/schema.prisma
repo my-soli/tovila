@@ -9,15 +9,18 @@ datasource db {
 }
 
 model Seller {
-  id             String   @id @default(uuid())
-  name           String
-  whatsappNumber String   @unique @map("whatsapp_number")
-  products       Json
-  deliveryInfo   Json     @map("delivery_info")
-  faqs           Json
-  createdAt      DateTime @default(now()) @map("created_at")
+  id                      String   @id @default(uuid())
+  name                    String
+  whatsappNumber          String   @unique @map("whatsapp_number")
+  products                Json
+  deliveryInfo            Json     @map("delivery_info")
+  faqs                    Json
+  sellerNotificationEmail String?  @map("seller_notification_email")
+  mpesaTillNumber         String?  @map("mpesa_till_number")
+  createdAt               DateTime @default(now()) @map("created_at")
 
   conversations Conversation[]
+  notifications Notification[]
 
   @@map("sellers")
 }
@@ -27,23 +30,29 @@ model Conversation {
   sellerId      String   @map("seller_id")
   seller        Seller   @relation(fields: [sellerId], references: [id])
   customerPhone String   @map("customer_phone")
+  status        String   @default("open") // "open" | "needs_attention" | "closed"
   createdAt     DateTime @default(now()) @map("created_at")
 
-  messages Message[]
-  leads    Lead[]
+  messages      Message[]
+  leads         Lead[]
+  notifications Notification[]
 
   @@index([customerPhone])
   @@index([sellerId])
+  @@index([status])
   @@map("conversations")
 }
 
 model Message {
-  id             String       @id @default(uuid())
-  conversationId String       @map("conversation_id")
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
-  sender         String // "customer" | "agent"
-  content        String
-  timestamp      DateTime     @default(now())
+  id              String       @id @default(uuid())
+  conversationId  String       @map("conversation_id")
+  conversation    Conversation @relation(fields: [conversationId], references: [id])
+  sender          String // "customer" | "agent"
+  content         String
+  mediaType       String?      @map("media_type") // e.g. "image" | "audio" | "document" | "video" | "sticker" | "location"
+  mediaId         String?      @map("media_id") // Meta's media ID, for future retrieval
+  sourceMessageId String?      @unique @map("source_message_id") // Meta's wamid, for de-duping retries/redeliveries
+  timestamp       DateTime     @default(now())
 
   @@index([conversationId])
   @@map("messages")
@@ -58,9 +67,38 @@ model Lead {
   variant          String?
   deliveryLocation String       @map("delivery_location")
   customerName     String       @map("customer_name")
-  status           String       @default("new")
+  status           String       @default("pending") // "pending" | "confirmed" | "shipped" | "delivered" | "cancelled"
+  paid             Boolean      @default(false)
   createdAt        DateTime     @default(now()) @map("created_at")
 
   @@index([conversationId])
   @@map("leads")
+}
+
+model Notification {
+  id             String       @id @default(uuid())
+  sellerId       String       @map("seller_id")
+  seller         Seller       @relation(fields: [sellerId], references: [id])
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  message        String
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([sellerId])
+  @@map("notifications")
+}
+
+model Job {
+  id        String   @id @default(uuid())
+  type      String
+  payload   Json
+  status    String   @default("pending") // "pending" | "processing" | "done" | "failed"
+  attempts  Int      @default(0)
+  lastError String?  @map("last_error")
+  runAt     DateTime @default(now()) @map("run_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status, runAt])
+  @@map("jobs")
 }

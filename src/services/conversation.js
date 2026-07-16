@@ -31,10 +31,40 @@ async function getRecentMessages(conversationId, limit = 20) {
   return messages.reverse();
 }
 
-async function saveMessage(conversationId, sender, content) {
-  return prisma.message.create({
-    data: { conversationId, sender, content },
+/** Same as getRecentMessages, but strictly before a given timestamp. */
+async function getMessagesBefore(conversationId, before, limit = 20) {
+  const messages = await prisma.message.findMany({
+    where: { conversationId, timestamp: { lt: before } },
+    orderBy: { timestamp: "desc" },
+    take: limit,
   });
+
+  return messages.reverse();
+}
+
+/** True if an agent message already followed the given timestamp — i.e. this customer message already got its reply. */
+async function hasReplyAfter(conversationId, timestamp) {
+  const reply = await prisma.message.findFirst({
+    where: { conversationId, sender: "agent", timestamp: { gt: timestamp } },
+  });
+  return Boolean(reply);
+}
+
+async function saveMessage(conversationId, sender, content, options = {}) {
+  const { sourceMessageId, mediaType, mediaId } = options;
+  return prisma.message.create({
+    data: { conversationId, sender, content, sourceMessageId, mediaType, mediaId },
+  });
+}
+
+/**
+ * Looks up a message by Meta's own message id (wamid). Used to make job
+ * processing idempotent — a retried job (or a genuine webhook redelivery
+ * from Meta) must not re-save the same inbound message twice.
+ */
+async function findMessageBySourceId(sourceMessageId) {
+  if (!sourceMessageId) return null;
+  return prisma.message.findUnique({ where: { sourceMessageId } });
 }
 
 /**
@@ -75,7 +105,10 @@ async function getConversationWithMessages(conversationId) {
 module.exports = {
   getOrCreateConversation,
   getRecentMessages,
+  getMessagesBefore,
+  hasReplyAfter,
   saveMessage,
+  findMessageBySourceId,
   listConversationsWithPreview,
   getConversationWithMessages,
 };
