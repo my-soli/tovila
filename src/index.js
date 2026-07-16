@@ -5,6 +5,7 @@ const webhookRouter = require("./routes/webhook");
 const dashboardRouter = require("./routes/dashboard");
 const { dashboardAuth } = require("./middleware/auth");
 const { startWorker } = require("./jobs/worker");
+const { startAutoCloseSweep } = require("./jobs/autoClose");
 
 const app = express();
 app.use(express.json());
@@ -31,5 +32,6 @@ app.listen(PORT, () => {
 });
 
 startWorker();
+startAutoCloseSweep();
 
 module.exports = app;

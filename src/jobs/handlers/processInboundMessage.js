@@ -109,7 +109,9 @@ async function recordRateLimitedMessage(seller, message) {
       ? message.text?.body?.trim() || ""
       : `[Customer sent ${MEDIA_LABELS[type] || "something"}]`;
 
-  const conversation = await getOrCreateConversation(seller.id, from);
+  let conversation = await getOrCreateConversation(seller.id, from);
+  conversation = await reopenIfClosed(conversation);
+
   await saveMessage(conversation.id, "customer", content, {
     sourceMessageId: message.id,
     mediaType: type !== "text" ? type : null,
@@ -119,6 +121,12 @@ async function recordRateLimitedMessage(seller, message) {
   console.warn(
     `Rate limit exceeded for ${from} (> ${MAX_MESSAGES_PER_HOUR} messages/hour) — message saved but no reply generated.`
   );
+}
+
+/** A new message always reopens an auto-closed conversation. */
+async function reopenIfClosed(conversation) {
+  if (conversation.status !== "closed") return conversation;
+  return setConversationStatus(conversation.id, "open");
 }
 
 /** Sends a WhatsApp reply, degrading gracefully (log only) while credentials are placeholders. */
@@ -151,7 +159,8 @@ async function handleMediaMessage(seller, message) {
   const content = `[Customer sent ${label}]`;
   const reply = MEDIA_REPLIES[type] || DEFAULT_MEDIA_REPLY;
 
-  const conversation = await getOrCreateConversation(seller.id, from);
+  let conversation = await getOrCreateConversation(seller.id, from);
+  conversation = await reopenIfClosed(conversation);
 
   await saveMessage(conversation.id, "customer", content, {
     sourceMessageId: message.id,
@@ -183,9 +192,10 @@ async function handleIncomingMessage(seller, from, text, sourceMessageId) {
     }
   }
 
-  const conversation = existing
+  let conversation = existing
     ? await getConversationById(existing.conversationId)
     : await getOrCreateConversation(seller.id, from);
+  conversation = await reopenIfClosed(conversation);
 
   // Once a conversation is flagged, the agent stops generating fresh Claude
   // replies for it — a human needs to resolve it (dashboard "Resolve"
