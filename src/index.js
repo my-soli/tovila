@@ -8,7 +8,16 @@ const { startWorker } = require("./jobs/worker");
 const { startAutoCloseSweep } = require("./jobs/autoClose");
 
 const app = express();
-app.use(express.json());
+// Captures the raw request body bytes alongside the parsed JSON — needed to
+// verify Meta's X-Hub-Signature-256 header, which is computed over the
+// exact bytes sent, not a re-serialization of the parsed object.
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 
 app.set("view engine", "ejs");

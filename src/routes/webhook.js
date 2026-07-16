@@ -1,5 +1,6 @@
 const express = require("express");
 const { enqueueJob } = require("../jobs/queue");
+const { verifyWebhookSignature } = require("../middleware/verifySignature");
 
 const router = express.Router();
 
@@ -22,7 +23,7 @@ router.get("/", (req, res) => {
 // Meta expects a 2xx response within a few seconds or it will retry (and you
 // get duplicate deliveries) — so we ack immediately and hand the payload off
 // to the job queue (src/jobs/) for actual processing, with retries on failure.
-router.post("/", (req, res) => {
+router.post("/", verifyWebhookSignature, (req, res) => {
   res.sendStatus(200);
 
   enqueueJob("process_inbound_message", req.body).catch((err) => {

@@ -12,8 +12,21 @@
 // "npm run seed" to create demo sellers). <from> is any made-up customer
 // number — reuse the same one across calls to build up a conversation.
 require("dotenv").config();
+const crypto = require("crypto");
 const prisma = require("../src/db/client");
 const { getSellerByWhatsappNumber } = require("../src/services/sellers");
+
+/**
+ * When WHATSAPP_APP_SECRET is set, sign the request the same way Meta does
+ * — this exercises the real signature-verification code path (see
+ * src/middleware/verifySignature.js) instead of relying on
+ * VERIFY_WEBHOOK_SIGNATURE=false to bypass it.
+ */
+function signPayload(rawBody) {
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (!appSecret) return null;
+  return "sha256=" + crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
+}
 
 function buildWebhookPayload({ to, from, text }) {
   const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -103,10 +116,21 @@ async function main() {
   const port = process.env.PORT || 3000;
   const url = `http://localhost:${port}/webhook`;
 
+  const rawBody = JSON.stringify(buildWebhookPayload({ to, from, text }));
+  const signature = signPayload(rawBody);
+  const headers = { "Content-Type": "application/json" };
+  if (signature) {
+    headers["X-Hub-Signature-256"] = signature;
+  } else {
+    console.log(
+      "(WHATSAPP_APP_SECRET not set — sending unsigned; make sure VERIFY_WEBHOOK_SIGNATURE=false in .env for local testing)"
+    );
+  }
+
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildWebhookPayload({ to, from, text })),
+    headers,
+    body: rawBody,
   });
 
   if (!res.ok) {
