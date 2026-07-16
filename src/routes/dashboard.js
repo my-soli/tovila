@@ -8,6 +8,7 @@ const { listLeads, updateLeadStatus, markLeadPaid } = require("../services/leads
 const { listSellers, updateSeller, createSeller } = require("../services/sellers");
 const { isWithin24hWindow } = require("../services/messagingWindow");
 const { notifyCustomerOfStatusChange } = require("../services/orderNotifications");
+const { getSellerStats } = require("../services/stats");
 
 const router = express.Router();
 
@@ -97,6 +98,11 @@ router.post("/products", async (req, res) => {
   });
 
   res.redirect(`/products?sellerId=${sellerId}&saved=1`);
+});
+
+router.get("/stats", async (req, res) => {
+  const stats = await getSellerStats(req.currentSeller.id);
+  res.render("stats", { stats });
 });
 
 router.get("/onboarding", (req, res) => {

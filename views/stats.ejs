@@ -1,0 +1,37 @@
+<%- include('partials/header') %>
+
+<h1>Stats</h1>
+<p class="hint"><%= currentSeller.name %></p>
+
+<div class="stats-grid">
+  <div class="stat-tile">
+    <div class="stat-value"><%= stats.totalConversations %></div>
+    <div class="stat-label">Total conversations</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value"><%= stats.totalLeads %></div>
+    <div class="stat-label">Leads captured</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value">
+      <% if (stats.avgResponseTimeSeconds === null) { %>
+        &mdash;
+      <% } else if (stats.avgResponseTimeSeconds < 60) { %>
+        <%= stats.avgResponseTimeSeconds %>s
+      <% } else { %>
+        <%= Math.round(stats.avgResponseTimeSeconds / 60) %>m
+      <% } %>
+    </div>
+    <div class="stat-label">Avg. response time</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value"><%= stats.messagesThisWeek %></div>
+    <div class="stat-label">Messages this week</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value"><%= stats.messagesThisMonth %></div>
+    <div class="stat-label">Messages this month</div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
