@@ -9,7 +9,7 @@
     <thead>
       <tr>
         <th>Item</th><th>Qty</th><th>Variant</th><th>Delivery</th>
-        <th>Customer</th><th>Phone</th><th>Status</th><th>Created</th>
+        <th>Customer</th><th>Phone</th><th>Status</th><th>Paid</th><th>Created</th>
       </tr>
     </thead>
     <tbody>
@@ -21,7 +21,23 @@
           <td><%= l.deliveryLocation %></td>
           <td><%= l.customerName %></td>
           <td><%= l.conversation.customerPhone %></td>
-          <td><span class="status-badge"><%= l.status %></span></td>
+          <td>
+            <form method="POST" action="/leads/<%= l.id %>/status?sellerId=<%= currentSeller.id %>" class="inline-form">
+              <select name="status" onchange="this.form.submit()">
+                <% ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].forEach(s => { %>
+                  <option value="<%= s %>" <%= s === l.status ? 'selected' : '' %>><%= s %></option>
+                <% }) %>
+              </select>
+            </form>
+          </td>
+          <td>
+            <form method="POST" action="/leads/<%= l.id %>/paid?sellerId=<%= currentSeller.id %>" class="inline-form">
+              <input type="hidden" name="paid" value="<%= l.paid ? 'false' : 'true' %>" />
+              <button type="submit" class="paid-toggle <%= l.paid ? 'is-paid' : '' %>">
+                <%= l.paid ? 'Paid ✓' : 'Mark paid' %>
+              </button>
+            </form>
+          </td>
           <td class="nowrap"><%= new Date(l.createdAt).toLocaleString() %></td>
         </tr>
       <% }) %>

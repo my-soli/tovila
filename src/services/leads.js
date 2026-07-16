@@ -31,4 +31,20 @@ async function listLeads(sellerId) {
   });
 }
 
-module.exports = { saveLead, listLeads };
+/** Updates a lead's fulfillment status, returning it with the conversation (for customer messaging). */
+async function updateLeadStatus(leadId, status) {
+  return prisma.lead.update({
+    where: { id: leadId },
+    data: { status },
+    include: { conversation: true },
+  });
+}
+
+async function markLeadPaid(leadId, paid) {
+  return prisma.lead.update({
+    where: { id: leadId },
+    data: { paid },
+  });
+}
+
+module.exports = { saveLead, listLeads, updateLeadStatus, markLeadPaid };

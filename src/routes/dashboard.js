@@ -4,9 +4,10 @@ const {
   getConversationWithMessages,
   setConversationStatus,
 } = require("../services/conversation");
-const { listLeads } = require("../services/leads");
+const { listLeads, updateLeadStatus, markLeadPaid } = require("../services/leads");
 const { listSellers, updateSeller } = require("../services/sellers");
 const { isWithin24hWindow } = require("../services/messagingWindow");
+const { notifyCustomerOfStatusChange } = require("../services/orderNotifications");
 
 const router = express.Router();
 
@@ -62,6 +63,17 @@ router.post("/conversations/:id/resolve", async (req, res) => {
 router.get("/leads", async (req, res) => {
   const leads = await listLeads(req.currentSeller.id);
   res.render("leads", { leads });
+});
+
+router.post("/leads/:id/status", async (req, res) => {
+  const lead = await updateLeadStatus(req.params.id, req.body.status);
+  await notifyCustomerOfStatusChange(lead);
+  res.redirect(`/leads?sellerId=${req.currentSeller.id}`);
+});
+
+router.post("/leads/:id/paid", async (req, res) => {
+  await markLeadPaid(req.params.id, req.body.paid === "true");
+  res.redirect(`/leads?sellerId=${req.currentSeller.id}`);
 });
 
 router.get("/products", (req, res) => {
