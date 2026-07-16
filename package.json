@@ -7,6 +7,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
+    "worker": "node src/worker.js",
+    "dev:worker": "node --watch src/worker.js",
+    "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
@@ -22,9 +25,7 @@
     "ejs": "^3.1.10",
     "express": "^4.21.0",
     "pg": "^8.22.0",
+    "prisma": "^5.20.0",
     "resend": "^6.17.2"
-  },
-  "devDependencies": {
-    "prisma": "^5.20.0"
   }
 }

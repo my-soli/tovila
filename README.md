@@ -12,12 +12,15 @@ currently take orders manually over WhatsApp DMs.
   WhatsApp number a message was sent to), a seller switcher in the
   dashboard, and a local message simulator so the loop can be built and
   tested without depending on Meta's WhatsApp verification.
-- **Phase 4** (this phase): closes out the remaining gaps between "working
-  demo" and "something a real seller can trust" — human escalation, the
-  WhatsApp 24h messaging rule, order status updates, faster onboarding,
-  webhook security, media handling, conversation lifecycle, a durable job
-  queue, Swahili/Sheng handling, M-Pesa payment instructions, basic
-  analytics, and rate limiting. Details below.
+- **Phase 4**: closes out the remaining gaps between "working demo" and
+  "something a real seller can trust" — human escalation, the WhatsApp 24h
+  messaging rule, order status updates, faster onboarding, webhook
+  security, media handling, conversation lifecycle, a durable job queue,
+  Swahili/Sheng handling, M-Pesa payment instructions, basic analytics, and
+  rate limiting.
+- **Phase 5** (this phase): deploys to Railway as two always-on services
+  (web + background worker) sharing one Supabase database — no more
+  ngrok, no cold starts. Details in section 6.
 
 ## Stack
 
@@ -31,9 +34,10 @@ currently take orders manually over WhatsApp DMs.
 ## Folder structure
 
 ```
+railway.toml            Railway deploy config (build, healthcheck, restart policy)
 src/
-  index.js              Express entry point — webhook unauthenticated, dashboard behind auth,
-                         starts the job worker + auto-close sweep
+  index.js              Express entry point — webhook unauthenticated, dashboard behind auth (web service)
+  worker.js              Background-only entry point — job worker + auto-close sweep, no HTTP (worker service)
   middleware/
     auth.js              Basic Auth guard for the dashboard
     verifySignature.js    Verifies Meta's X-Hub-Signature-256 on incoming webhooks
@@ -210,15 +214,27 @@ you've made via the dashboard. It then wipes and recreates a handful of
 realistic fake conversations/leads for each seller (a mix of FAQ-only chats
 and completed orders), so the dashboard has something to show immediately.
 
-### 2f. Start the server
+### 2f. Start the server — now two processes, not one
+
+As of this phase, the web server and the background job worker are
+**separate processes** (matching how they deploy on Railway as two
+services, section 6). Run both, in two terminals:
 
 ```sh
-npm run dev
+npm run dev          # terminal 1 — Express (webhook + dashboard)
+npm run dev:worker    # terminal 2 — job worker + auto-close sweep
 ```
 
-You should see `Tovila server listening on port 3000`, plus the job worker
-and auto-close sweep starting up. Keep `ngrok http 3000` running in another
-terminal (step 1b) if you're testing against real WhatsApp.
+You should see `Tovila server listening on port 3000` in terminal 1, and
+`Job worker started` / `Auto-close sweep started` in terminal 2. **If you
+only run `npm run dev`, incoming messages will be saved but never
+processed** — they'll just sit `pending` in the `jobs` table forever,
+since nothing is polling it. This is the one thing that changed in the
+local dev workflow this phase — the simulator scripts (section 5) also
+need both running to actually see a reply.
+
+Keep `ngrok http 3000` running in a third terminal if you're testing
+against real WhatsApp.
 
 ### 2g. Log into the dashboard
 
@@ -388,6 +404,167 @@ node scripts/test-conversations.js
 
 ---
 
+## 6. Deploying to Railway
+
+Railway's two-service model (a persistent web service + a persistent
+background worker, both native — no cron/serverless tricks needed) fits
+this app's architecture almost exactly as-is. Two things had to change to
+make that true, both already done in this repo:
+
+- The job worker used to run inside the same process as the Express app
+  (`src/index.js`). It's now `src/worker.js` — a separate, HTTP-less entry
+  point — so it can be its own Railway service instead of quietly doubling
+  up if the web service also ran it. **This changed local dev too**: see
+  section 2f, you now run `npm run dev` and `npm run dev:worker` side by
+  side instead of just one command.
+- `prisma` moved from `devDependencies` to `dependencies`, and a
+  `postinstall: prisma generate` script was added — Railway's build
+  installs with `NODE_ENV=production`, which skips `devDependencies`, and
+  without this the Prisma Client would never get (re)generated on deploy
+  and the app would fail at runtime. `PORT` was already read from
+  `process.env.PORT` correctly (Railway injects it), and `/health` already
+  existed — nothing to fix on either front.
+
+### 6a. Create the project and connect GitHub
+
+1. In the [Railway dashboard](https://railway.app), **New Project → Deploy
+   from GitHub repo** and pick `my-soli/tovila`.
+2. Railway creates one service from the repo automatically — this becomes
+   your **web** service. Rename it (Settings → General) to something like
+   `tovila-web` so it's not confused with the worker later.
+3. `railway.toml` in the repo root already tells Railway to build with
+   Nixpacks, run `npm start`, healthcheck `/health`, and restart on
+   failure — the web service picks this up with no extra configuration.
+
+### 6b. Add the worker as a second service
+
+1. In the same project, **New → GitHub Repo**, and select the *same*
+   `my-soli/tovila` repo again. Rename this one `tovila-worker`.
+2. Open its **Settings → Deploy** tab and set **Custom Start Command** to:
+   ```
+   npm run worker
+   ```
+   This is the one setting `railway.toml` can't express for you — a single
+   config file applies to the repo's default deploy, and this second
+   service overrides just its start command from the dashboard (exactly
+   the "via its dashboard/project canvas" flexibility Railway is built
+   around). Everything else (build, install, `postinstall`) stays shared.
+3. Under **Settings → Networking**, do **not** generate a public domain for
+   this service — it has no HTTP server (`src/worker.js` never calls
+   `app.listen`), so there's nothing for a domain to point at, and Railway
+   won't run HTTP healthchecks against a service with no domain anyway (the
+   `healthcheckPath` in `railway.toml` only applies to the web service).
+
+### 6c. Do NOT provision a Railway Postgres
+
+Skip Railway's **+ New → Database → PostgreSQL** entirely — this app talks
+to your existing Supabase Postgres via plain environment variables
+(`DATABASE_URL` / `DIRECT_URL`), not a Railway-managed database plugin.
+Adding one would just be an unused, separately-billed empty database sitting
+in the project.
+
+### 6d. Set environment variables once, shared across both services
+
+Railway's **Shared Variables** (project-level, not per-service) are exactly
+the "set once, both services see it" mechanism you're after — set these at
+the **project** level (Project Settings → Shared Variables, or the
+Variables tab with the "shared" scope toggle) rather than on each service
+individually, then both `tovila-web` and `tovila-worker` inherit them
+automatically with nothing to duplicate or keep in sync:
+
+- [ ] `WHATSAPP_ACCESS_TOKEN`
+- [ ] `WHATSAPP_PHONE_NUMBER_ID`
+- [ ] `WHATSAPP_VERIFY_TOKEN`
+- [ ] `WHATSAPP_APP_SECRET`
+- [ ] `VERIFY_WEBHOOK_SIGNATURE` (`true` once real WhatsApp is verified;
+      `false` only if you're still testing without an app secret set)
+- [ ] `ANTHROPIC_API_KEY`
+- [ ] `CLAUDE_MODEL`
+- [ ] `DATABASE_URL` (pooled Supabase connection string)
+- [ ] `DIRECT_URL` (direct Supabase connection string — used by Prisma
+      migrations; the running app doesn't need it at request time, but
+      Prisma's schema still references it, so set it anyway)
+- [ ] `DASHBOARD_USERNAME`
+- [ ] `DASHBOARD_PASSWORD`
+- [ ] `RESEND_API_KEY` (optional)
+
+**Don't set `PORT`** — Railway injects it automatically for the web
+service, and the worker service doesn't use it at all (it never binds to a
+port). Setting it manually would only risk conflicting with Railway's own
+assignment.
+
+### 6e. Run migrations against Supabase
+
+Railway doesn't run this for you automatically (deliberately — see the
+"Notes" section of this README on why migrations stay a manual step, same
+as they have been throughout local development). From your own machine,
+with `.env` pointed at the same Supabase instance:
+
+```sh
+npx prisma migrate deploy
+```
+
+Run this once now, and again after pulling any future commit that adds a
+new migration, before/alongside redeploying.
+
+### 6f. Confirm both services are healthy
+
+- `tovila-web` should show **Active** with a green healthcheck once
+  deployed — visit `https://<its-generated-domain>.up.railway.app/health`
+  and confirm you get back `Tovila WhatsApp agent is running.`
+- `tovila-worker` should show **Active** too (no domain, no healthcheck —
+  just "is the process still running"). Confirm it's actually doing
+  something by checking its **Logs** tab for `Job worker started` and
+  `Auto-close sweep started` right after deploy.
+- Hit the web service's domain root `/` — you should get the dashboard's
+  HTTP Basic Auth prompt. **Basic Auth is unaffected by Railway** — it's
+  stateless header-based auth with no session/cookie/local-file
+  dependency, so it works identically to local dev. The one thing worth
+  confirming (not fixing — Railway already does this correctly by default):
+  Railway's `*.up.railway.app` domains are HTTPS-only with TLS
+  auto-provisioned, so your Basic Auth credentials (base64-encoded, not
+  encrypted on their own) are never sent over plaintext HTTP.
+- **Logs**: each service has its own **Logs** tab in the Railway dashboard
+  (or `railway logs` via the CLI, scoped to whichever service you've
+  selected/linked) — check `tovila-web`'s logs for webhook/HTTP issues and
+  `tovila-worker`'s logs for job processing/Claude/WhatsApp-send issues;
+  they're separate processes now, so they no longer share one combined log
+  stream the way local `npm run dev` used to show everything in one
+  terminal.
+
+### 6g. Point Meta's webhook at the real URL (once WhatsApp verification clears)
+
+Your webhook URL is now stable —
+`https://<tovila-web-domain>.up.railway.app/webhook` (or a custom domain if
+you attach one) — instead of ngrok's URL, which changes every time you
+restart the tunnel. Once Meta's Business verification is sorted, update the
+**Callback URL** in the Meta App Dashboard (section 1c) to this Railway
+URL instead of your ngrok one, and you're done with ngrok entirely for
+anything beyond local dev.
+
+### 6h. Pricing — what to expect
+
+Railway's free trial gives **$5 of usage credit over 30 days**; after that
+(or once the trial credit runs out, whichever comes first) you're on the
+**Hobby plan: $5/month base, plus usage-based charges** for compute/memory
+beyond what the base covers. Nothing about the app's setup changes when
+that happens — it's purely a billing transition on Railway's side.
+
+Running **two** always-on services (web + worker) instead of one does use
+more of that credit/monthly allowance than a single service would — you're
+paying for two long-running processes 24/7 instead of one. At this app's
+actual scale (a couple of demo sellers, low message volume, both processes
+mostly idle between requests/poll ticks), expect this to be modest — well
+within the $5 Hobby base for compute, since neither process is CPU or
+memory-intensive (the worker mostly sleeps between 2s polls; the web
+service only does real work per webhook/dashboard request). The honest
+caveat: exact cost depends on Railway's current per-resource pricing at the
+time you deploy, which changes independently of anything in this repo — the
+Railway dashboard's usage view is the authoritative source once you're
+actually running, not this README.
+
+---
+
 ## Notes / known limitations
 
 - Full media understanding (actually looking at images, listening to
@@ -406,3 +583,8 @@ node scripts/test-conversations.js
   onboarding real sellers.
 - Dashboard auth is intentionally a single hardcoded login (item 13 above)
   — not being revisited at this stage.
+- Migrations are a deliberate manual step (`npx prisma migrate deploy`),
+  not wired into app startup or Railway's build — auto-running migrations
+  on every boot of two independent services risked surprising, hard-to-
+  debug behavior for little benefit at this scale. Run it yourself after
+  pulling a commit with a new migration, same as throughout local dev.
