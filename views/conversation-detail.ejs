@@ -10,7 +10,9 @@
       <div class="bubble-meta">
         <%= m.sender === 'customer' ? 'Customer' : 'Tovila' %> &middot; <%= new Date(m.timestamp).toLocaleString() %>
       </div>
-      <div class="bubble-text"><%= m.content %></div>
+      <div class="bubble-text">
+        <% if (m.mediaType) { %><span class="media-badge"><%= m.mediaType %></span> <% } %><%= m.content %>
+      </div>
     </div>
   <% }) %>
 </div>

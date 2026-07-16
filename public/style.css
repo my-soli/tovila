@@ -113,6 +113,18 @@ table.list-table th, table.editor-table th {
   text-transform: capitalize;
 }
 
+.media-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-right: 4px;
+}
+
 .thread {
   display: flex;
   flex-direction: column;

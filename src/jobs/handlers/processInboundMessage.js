@@ -10,6 +10,33 @@ const { getSellerByWhatsappNumber } = require("../../services/sellers");
 const { generateReply } = require("../../agent/core");
 const { sendWhatsAppMessage } = require("../../whatsapp/client");
 
+// Meta message types that aren't plain text. Full understanding is out of
+// scope for now — the agent just replies honestly instead of ignoring or
+// crashing, and the media type/id are logged so it's visible in the
+// dashboard conversation thread.
+const MEDIA_LABELS = {
+  image: "an image",
+  video: "a video",
+  audio: "an audio message",
+  document: "a document",
+  sticker: "a sticker",
+  location: "a location",
+  contacts: "a contact card",
+};
+
+const MEDIA_REPLIES = {
+  image: "I can see you've sent an image — could you describe what you're looking for in text for now? I'm not able to view images just yet.",
+  video: "Thanks for the video — I can't watch videos yet, could you describe what you need in text?",
+  audio: "I can see you've sent a voice note — I can't listen to audio yet, could you type out your question instead?",
+  document: "I can see you've sent a document — could you describe what you need in text for now?",
+  sticker: "Thanks for the sticker! How can I help you today?",
+  location: "Thanks for sharing your location — could you also confirm the area/estate name in text so I can note it correctly?",
+  contacts: "Thanks for sharing that contact — how can I help you today?",
+};
+
+const DEFAULT_MEDIA_REPLY =
+  "I can see you've sent something I'm not able to read yet — could you describe what you need in text?";
+
 /**
  * Processes one raw WhatsApp webhook payload (job.payload). This is the same
  * body Meta POSTs to /webhook — the webhook route just enqueues it and
@@ -38,17 +65,58 @@ async function processInboundMessage(body) {
   }
 
   for (const message of messages) {
-    if (message.type !== "text") {
-      // MVP handles text only; extend here for images/audio/etc. later.
-      continue;
+    if (message.type === "text") {
+      const from = message.from; // sender's WhatsApp number, e.g. "2547XXXXXXXX"
+      const text = message.text?.body?.trim();
+      if (!text) continue;
+
+      await handleIncomingMessage(seller, from, text, message.id);
+    } else {
+      await handleMediaMessage(seller, message);
     }
-
-    const from = message.from; // sender's WhatsApp number, e.g. "2547XXXXXXXX"
-    const text = message.text?.body?.trim();
-    if (!text) continue;
-
-    await handleIncomingMessage(seller, from, text, message.id);
   }
+}
+
+/** Sends a WhatsApp reply, degrading gracefully (log only) while credentials are placeholders. */
+async function sendReplySafely(to, reply) {
+  try {
+    await sendWhatsAppMessage(to, reply);
+  } catch (err) {
+    console.warn(`WhatsApp send failed (${err.message})`);
+    console.log(`Would have sent to WhatsApp: ${reply}`);
+  }
+}
+
+/**
+ * Non-text messages (images, audio, documents, ...) get a sensible canned
+ * reply instead of being ignored or crashing the agent — full media
+ * understanding is a later phase. The media type/id are recorded so the
+ * dashboard can show what was sent.
+ */
+async function handleMediaMessage(seller, message) {
+  const from = message.from;
+  const type = message.type;
+
+  if (message.id && (await findMessageBySourceId(message.id))) {
+    console.log(`Skipping already-processed message ${message.id}`);
+    return;
+  }
+
+  const mediaId = message[type]?.id || null;
+  const label = MEDIA_LABELS[type] || "something";
+  const content = `[Customer sent ${label}]`;
+  const reply = MEDIA_REPLIES[type] || DEFAULT_MEDIA_REPLY;
+
+  const conversation = await getOrCreateConversation(seller.id, from);
+
+  await saveMessage(conversation.id, "customer", content, {
+    sourceMessageId: message.id,
+    mediaType: type,
+    mediaId,
+  });
+  await saveMessage(conversation.id, "agent", reply);
+
+  await sendReplySafely(from, reply);
 }
 
 /**
@@ -93,15 +161,7 @@ async function handleIncomingMessage(seller, from, text, sourceMessageId) {
 
   await saveMessage(conversation.id, "agent", reply);
 
-  // WHATSAPP_ACCESS_TOKEN/PHONE_NUMBER_ID are still placeholders until Meta's
-  // verification is sorted — don't let a failed send crash message handling
-  // or lose the reply we already saved to the conversation.
-  try {
-    await sendWhatsAppMessage(from, reply);
-  } catch (err) {
-    console.warn(`WhatsApp send failed (${err.message})`);
-    console.log(`Would have sent to WhatsApp: ${reply}`);
-  }
+  await sendReplySafely(from, reply);
 }
 
 module.exports = { processInboundMessage };
