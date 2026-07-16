@@ -2,7 +2,16 @@
 
 <p><a href="/?sellerId=<%= conversation.seller.id %>">&larr; Back to conversations</a></p>
 <h1><%= conversation.customerPhone %></h1>
-<p class="hint"><%= conversation.seller.name %></p>
+<p class="hint">
+  <%= conversation.seller.name %> &middot;
+  <span class="status-badge status-<%= conversation.status %>"><%= conversation.status.replace('_', ' ') %></span>
+</p>
+
+<% if (conversation.status === 'needs_attention') { %>
+  <form method="POST" action="/conversations/<%= conversation.id %>/resolve" class="resolve-form">
+    <button type="submit">Mark resolved</button>
+  </form>
+<% } %>
 
 <div class="thread">
   <% conversation.messages.forEach(m => { %>

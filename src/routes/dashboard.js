@@ -2,6 +2,7 @@ const express = require("express");
 const {
   listConversationsWithPreview,
   getConversationWithMessages,
+  setConversationStatus,
 } = require("../services/conversation");
 const { listLeads } = require("../services/leads");
 const { listSellers, updateSeller } = require("../services/sellers");
@@ -47,6 +48,12 @@ router.get("/conversations/:id", async (req, res) => {
   res.locals.currentSeller = conversation.seller;
 
   res.render("conversation-detail", { conversation });
+});
+
+// Resolves a flagged conversation back to normal handling.
+router.post("/conversations/:id/resolve", async (req, res) => {
+  await setConversationStatus(req.params.id, "open");
+  res.redirect(`/conversations/${req.params.id}`);
 });
 
 router.get("/leads", async (req, res) => {

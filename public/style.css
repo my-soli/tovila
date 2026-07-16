@@ -113,6 +113,31 @@ table.list-table th, table.editor-table th {
   text-transform: capitalize;
 }
 
+.status-needs_attention {
+  background: #fdecea;
+  border-color: #f3b9b0;
+  color: #9c3b2e;
+  font-weight: 600;
+}
+
+.status-closed {
+  color: var(--muted);
+}
+
+.resolve-form {
+  margin: 8px 0 20px;
+}
+
+.resolve-form button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
 .media-badge {
   display: inline-block;
   background: var(--accent);

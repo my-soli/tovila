@@ -1,5 +1,7 @@
 const {
   getOrCreateConversation,
+  getConversationById,
+  setConversationStatus,
   getRecentMessages,
   getMessagesBefore,
   hasReplyAfter,
@@ -8,8 +10,12 @@ const {
 } = require("../../services/conversation");
 const { getSellerByWhatsappNumber } = require("../../services/sellers");
 const { isRateLimited, MAX_MESSAGES_PER_HOUR } = require("../../services/rateLimit");
+const { notifyNeedsAttention } = require("../../services/notifications");
 const { generateReply } = require("../../agent/core");
 const { sendWhatsAppMessage } = require("../../whatsapp/client");
+
+const NEEDS_ATTENTION_HOLDING_REPLY =
+  "Thanks for the extra info — the shop owner is already looking into this and will get back to you shortly.";
 
 // Meta message types that aren't plain text. Full understanding is out of
 // scope for now — the agent just replies honestly instead of ignoring or
@@ -178,8 +184,21 @@ async function handleIncomingMessage(seller, from, text, sourceMessageId) {
   }
 
   const conversation = existing
-    ? { id: existing.conversationId }
+    ? await getConversationById(existing.conversationId)
     : await getOrCreateConversation(seller.id, from);
+
+  // Once a conversation is flagged, the agent stops generating fresh Claude
+  // replies for it — a human needs to resolve it (dashboard "Resolve"
+  // button, see routes/dashboard.js) before normal handling resumes. The
+  // customer's message is still recorded either way.
+  if (conversation.status === "needs_attention") {
+    if (!existing) {
+      await saveMessage(conversation.id, "customer", text, { sourceMessageId });
+    }
+    await saveMessage(conversation.id, "agent", NEEDS_ATTENTION_HOLDING_REPLY);
+    await sendReplySafely(from, NEEDS_ATTENTION_HOLDING_REPLY);
+    return;
+  }
 
   // Fetch prior context BEFORE saving this message, so we don't double it up.
   const history = existing
@@ -190,7 +209,7 @@ async function handleIncomingMessage(seller, from, text, sourceMessageId) {
     await saveMessage(conversation.id, "customer", text, { sourceMessageId });
   }
 
-  const reply = await generateReply({
+  const { reply, flagged, flagReason } = await generateReply({
     seller,
     conversationId: conversation.id,
     history,
@@ -198,6 +217,11 @@ async function handleIncomingMessage(seller, from, text, sourceMessageId) {
   });
 
   await saveMessage(conversation.id, "agent", reply);
+
+  if (flagged) {
+    await setConversationStatus(conversation.id, "needs_attention");
+    await notifyNeedsAttention({ seller, conversation, reason: flagReason });
+  }
 
   await sendReplySafely(from, reply);
 }

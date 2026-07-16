@@ -69,8 +69,10 @@ async function findMessageBySourceId(sourceMessageId) {
 
 /**
  * Returns every conversation for a seller with a one-message preview (the
- * latest message), sorted by that message's timestamp descending.
- * Conversations with no messages yet sort by their own createdAt instead.
+ * latest message). Sorted with needs_attention conversations pinned first
+ * (they need eyes on them regardless of recency), then by the latest
+ * message's timestamp descending. Conversations with no messages yet sort
+ * by their own createdAt instead.
  */
 async function listConversationsWithPreview(sellerId) {
   const conversations = await prisma.conversation.findMany({
@@ -84,11 +86,25 @@ async function listConversationsWithPreview(sellerId) {
     .map((c) => ({
       id: c.id,
       customerPhone: c.customerPhone,
+      status: c.status,
       createdAt: c.createdAt,
       lastMessage: c.messages[0] || null,
       lastActivityAt: c.messages[0]?.timestamp || c.createdAt,
     }))
-    .sort((a, b) => b.lastActivityAt - a.lastActivityAt);
+    .sort((a, b) => {
+      const aFlagged = a.status === "needs_attention";
+      const bFlagged = b.status === "needs_attention";
+      if (aFlagged !== bFlagged) return aFlagged ? -1 : 1;
+      return b.lastActivityAt - a.lastActivityAt;
+    });
+}
+
+async function getConversationById(conversationId) {
+  return prisma.conversation.findUnique({ where: { id: conversationId } });
+}
+
+async function setConversationStatus(conversationId, status) {
+  return prisma.conversation.update({ where: { id: conversationId }, data: { status } });
 }
 
 /** Returns a conversation (with its seller) and its full message thread, oldest first. */
@@ -104,6 +120,8 @@ async function getConversationWithMessages(conversationId) {
 
 module.exports = {
   getOrCreateConversation,
+  getConversationById,
+  setConversationStatus,
   getRecentMessages,
   getMessagesBefore,
   hasReplyAfter,

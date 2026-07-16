@@ -7,12 +7,13 @@
 <% } else { %>
   <table class="list-table">
     <thead>
-      <tr><th>Customer</th><th>Last message</th><th>When</th></tr>
+      <tr><th>Customer</th><th>Status</th><th>Last message</th><th>When</th></tr>
     </thead>
     <tbody>
       <% conversations.forEach(c => { %>
         <tr class="clickable-row" onclick="window.location='/conversations/<%= c.id %>'">
           <td><%= c.customerPhone %></td>
+          <td><span class="status-badge status-<%= c.status %>"><%= c.status.replace('_', ' ') %></span></td>
           <td class="preview">
             <% if (c.lastMessage) { %>
               <%= c.lastMessage.sender === 'agent' ? 'You: ' : '' %><%= c.lastMessage.content %>
