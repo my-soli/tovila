@@ -1,0 +1,79 @@
+<%- include('partials/header') %>
+
+<h1>Add a seller</h1>
+<p class="hint">Onboard a new seller without touching the database directly. You'll be able to add/edit products and FAQs here too, or refine them later from the Products &amp; FAQs page.</p>
+
+<form method="POST" action="/onboarding" class="editor-form">
+  <section>
+    <h2>Seller info</h2>
+    <label>Business name
+      <input type="text" name="sellerName" required />
+    </label>
+    <label>WhatsApp number (the number customers message, no leading "+", e.g. 2547XXXXXXXX)
+      <input type="text" name="whatsappNumber" required />
+    </label>
+    <label>Notification email (for "needs attention" alerts, optional)
+      <input type="email" name="sellerNotificationEmail" />
+    </label>
+    <label>M-Pesa Till Number (optional)
+      <input type="text" name="mpesaTillNumber" />
+    </label>
+  </section>
+
+  <section>
+    <h2>Delivery</h2>
+    <div class="delivery-grid">
+      <label>Nairobi fee (KES)
+        <input type="number" name="nairobiFee" value="0" />
+      </label>
+      <label>Nairobi ETA
+        <input type="text" name="nairobiEta" placeholder="e.g. 1-2 days" />
+      </label>
+      <label>Upcountry fee (KES)
+        <input type="number" name="upcountryFee" value="0" />
+      </label>
+      <label>Upcountry ETA
+        <input type="text" name="upcountryEta" placeholder="e.g. 3-5 days" />
+      </label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Products</h2>
+    <table class="editor-table">
+      <thead>
+        <tr><th>Name</th><th>Price (KES)</th><th>Sizes (comma-separated)</th><th>Stock</th></tr>
+      </thead>
+      <tbody>
+        <% for (let i = 0; i < 4; i++) { %>
+          <tr>
+            <td><input type="text" name="productName" /></td>
+            <td><input type="number" name="productPrice" /></td>
+            <td><input type="text" name="productSizes" /></td>
+            <td><input type="number" name="productStock" /></td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+    <p class="hint">Leave a row's name blank to skip it — you can always add more later.</p>
+  </section>
+
+  <section>
+    <h2>FAQs</h2>
+    <table class="editor-table">
+      <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+      <tbody>
+        <% for (let i = 0; i < 3; i++) { %>
+          <tr>
+            <td><input type="text" name="faqQuestion" /></td>
+            <td><input type="text" name="faqAnswer" /></td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </section>
+
+  <button type="submit">Add seller</button>
+</form>
+
+<%- include('partials/footer') %>

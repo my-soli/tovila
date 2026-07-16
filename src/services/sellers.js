@@ -17,9 +17,14 @@ async function updateSeller(id, data) {
   return prisma.seller.update({ where: { id }, data });
 }
 
+async function createSeller(data) {
+  return prisma.seller.create({ data });
+}
+
 module.exports = {
   listSellers,
   getSellerById,
   getSellerByWhatsappNumber,
   updateSeller,
+  createSeller,
 };

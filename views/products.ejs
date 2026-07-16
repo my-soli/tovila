@@ -11,6 +11,12 @@
     <label>Name
       <input type="text" name="sellerName" value="<%= seller.name %>" />
     </label>
+    <label>Notification email (for "needs attention" alerts)
+      <input type="email" name="sellerNotificationEmail" value="<%= seller.sellerNotificationEmail || '' %>" />
+    </label>
+    <label>M-Pesa Till Number
+      <input type="text" name="mpesaTillNumber" value="<%= seller.mpesaTillNumber || '' %>" />
+    </label>
   </section>
 
   <section>

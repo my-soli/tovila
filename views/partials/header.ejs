@@ -9,12 +9,15 @@
 <body>
   <header class="topbar">
     <div class="brand">Tovila</div>
-    <% if (typeof currentSeller !== 'undefined') { %>
-      <nav>
+    <nav>
+      <% if (typeof currentSeller !== 'undefined' && currentSeller) { %>
         <a href="/?sellerId=<%= currentSeller.id %>">Conversations</a>
         <a href="/leads?sellerId=<%= currentSeller.id %>">Leads</a>
         <a href="/products?sellerId=<%= currentSeller.id %>">Products &amp; FAQs</a>
-      </nav>
+      <% } %>
+      <a href="/onboarding">Add Seller</a>
+    </nav>
+    <% if (typeof currentSeller !== 'undefined' && currentSeller && sellers.length > 0) { %>
       <select
         class="seller-switcher"
         onchange="const u = new URL(location.href); u.searchParams.set('sellerId', this.value); location.href = u.toString();"
