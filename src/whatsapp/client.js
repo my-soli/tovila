@@ -1,51 +1,18 @@
-const WHATSAPP_API_VERSION = "v21.0";
-
-/** POSTs a message body to the Cloud API's /messages endpoint, shared by text and template sends. */
-async function postToWhatsApp(body) {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const token = process.env.WHATSAPP_ACCESS_TOKEN;
-
-  if (!phoneNumberId || !token) {
-    throw new Error(
-      "WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_ACCESS_TOKEN are not set — check your .env"
-    );
-  }
-
-  const url = `https://graph.facebook.com/${WHATSAPP_API_VERSION}/${phoneNumberId}/messages`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const errBody = await res.text();
-    throw new Error(`WhatsApp send failed (${res.status}): ${errBody}`);
-  }
-
-  return res.json();
-}
+const { sendMetaMessage, postToMeta } = require("./providers/meta");
+const { sendTwilioMessage } = require("./providers/twilio");
 
 /**
- * Sends a plain-text WhatsApp message via the Meta Business Cloud API.
- * `to` must be a phone number in international format with no leading "+"
- * (this is the same format WhatsApp sends back in `message.from`).
- *
- * Only valid within 24h of the customer's last inbound message — see
- * src/services/messagingWindow.js and src/whatsapp/templates.js for the
- * template-message path required outside that window.
+ * Set WHATSAPP_PROVIDER=twilio to send/receive over Twilio's WhatsApp API
+ * instead of Meta's Cloud API directly — e.g. while Meta business
+ * verification is pending. Everything above this dispatcher (the agent, job
+ * handlers, dashboard) calls sendWhatsAppMessage and never needs to know
+ * which provider is actually wired up.
  */
 async function sendWhatsAppMessage(to, text) {
-  return postToWhatsApp({
-    messaging_product: "whatsapp",
-    to,
-    type: "text",
-    text: { body: text },
-  });
+  if (process.env.WHATSAPP_PROVIDER === "twilio") {
+    return sendTwilioMessage(to, text);
+  }
+  return sendMetaMessage(to, text);
 }
 
-module.exports = { sendWhatsAppMessage, postToWhatsApp };
+module.exports = { sendWhatsAppMessage, postToWhatsApp: postToMeta };

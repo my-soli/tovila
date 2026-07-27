@@ -1,10 +1,13 @@
 const express = require("express");
 const { enqueueJob } = require("../jobs/queue");
 const { verifyWebhookSignature } = require("../middleware/verifySignature");
+const { normalizeTwilioPayload } = require("../whatsapp/providers/twilio");
 
 const router = express.Router();
 
-// GET /webhook — Meta's one-time webhook verification challenge.
+// GET /webhook — Meta's one-time webhook verification challenge. Twilio has
+// no equivalent GET handshake, so this route is simply never hit when
+// WHATSAPP_PROVIDER=twilio.
 router.get("/", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -19,14 +22,17 @@ router.get("/", (req, res) => {
   return res.sendStatus(403);
 });
 
-// POST /webhook — incoming WhatsApp messages / status updates.
-// Meta expects a 2xx response within a few seconds or it will retry (and you
-// get duplicate deliveries) — so we ack immediately and hand the payload off
-// to the job queue (src/jobs/) for actual processing, with retries on failure.
+// POST /webhook — incoming WhatsApp messages / status updates. Both
+// providers expect a fast 2xx or they'll retry (and redeliver) — so we ack
+// immediately and hand the payload off to the job queue (src/jobs/) for
+// actual processing, with retries on failure.
 router.post("/", verifyWebhookSignature, (req, res) => {
   res.sendStatus(200);
 
-  enqueueJob("process_inbound_message", req.body).catch((err) => {
+  const payload =
+    process.env.WHATSAPP_PROVIDER === "twilio" ? normalizeTwilioPayload(req.body) : req.body;
+
+  enqueueJob("process_inbound_message", payload).catch((err) => {
     console.error("Failed to enqueue inbound message job:", err);
   });
 });

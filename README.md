@@ -361,6 +361,45 @@ npx prisma studio
 
 ---
 
+### 4a. Using Twilio instead of Meta directly
+
+Meta's own business verification (needed for a real WhatsApp number/testing
+beyond 5 tester numbers) can take a while to clear. `WHATSAPP_PROVIDER=twilio`
+switches Tovila to send/receive over Twilio's WhatsApp Sandbox instead — same
+agent, same DB, same dashboard, just a different transport. Nothing else in
+the codebase needs to know which provider is active; the swap happens in
+`src/whatsapp/client.js` and `src/middleware/verifySignature.js`.
+
+1. Sign up at [twilio.com/try-twilio](https://www.twilio.com/try-twilio) (no
+   business verification required). New accounts get $15 in trial credit.
+2. In the Console, go to **Messaging -> Try it out -> Send a WhatsApp
+   message**. From your own phone, WhatsApp the "join `<code>`" message
+   shown there to the sandbox number — this links your phone as a tester.
+3. Set in `.env`:
+   ```
+   WHATSAPP_PROVIDER=twilio
+   TWILIO_ACCOUNT_SID=...      # Console dashboard homepage
+   TWILIO_AUTH_TOKEN=...       # Console dashboard homepage
+   TWILIO_WHATSAPP_NUMBER=14155238886   # the sandbox number, no leading "+"
+   ```
+4. Keep `ngrok http 3000` running (see 1b) and configure the sandbox's
+   **"When a message comes in"** webhook (Console -> Messaging -> Try it out
+   -> Send a WhatsApp message -> Sandbox settings) to
+   `https://<your-ngrok-domain>/webhook`, method POST. Twilio has no GET
+   verification handshake — just save the URL.
+5. Message the sandbox number from your phone. Same test flow as above.
+
+Two things that don't carry over from the Meta path yet: template messages
+outside the 24h window aren't wired up for Twilio (`src/whatsapp/templates.js`
+throws a clear error if that path is hit — order-status updates outside the
+window will log-and-skip instead of sending, same graceful-failure pattern
+used elsewhere), and if signature verification rejects everything behind
+ngrok, set `TWILIO_WEBHOOK_URL` in `.env` to the exact ngrok `https://.../webhook`
+URL (Twilio signs the URL it thinks it called, which can disagree with what
+Express sees through the tunnel).
+
+---
+
 ## 5. Test the loop locally, without WhatsApp
 
 If Meta's verification is still pending, use the simulator instead — it

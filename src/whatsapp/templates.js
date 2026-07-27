@@ -1,4 +1,4 @@
-const { postToWhatsApp } = require("./client");
+const { postToMeta } = require("./providers/meta");
 
 // TODO(meta-verification): these template names must exist and be APPROVED
 // in Meta Business Manager before sendWhatsAppTemplateMessage will actually
@@ -29,12 +29,23 @@ const TEMPLATES = {
  * TEMPLATES above.
  */
 async function sendWhatsAppTemplateMessage(to, templateKey, ...componentArgs) {
+  if (process.env.WHATSAPP_PROVIDER === "twilio") {
+    // Twilio's outside-the-window path uses its own Content API (Content
+    // SIDs, not Meta template names) — a separate integration, out of scope
+    // for now. Callers already catch send failures gracefully (see
+    // sendReplySafely / notifyCustomerOfStatusChange), so this just logs
+    // instead of silently pretending to succeed.
+    throw new Error(
+      "Template messages outside the 24h window aren't wired up for the Twilio provider yet."
+    );
+  }
+
   const template = TEMPLATES[templateKey];
   if (!template) {
     throw new Error(`Unknown WhatsApp template "${templateKey}"`);
   }
 
-  return postToWhatsApp({
+  return postToMeta({
     messaging_product: "whatsapp",
     to,
     type: "template",

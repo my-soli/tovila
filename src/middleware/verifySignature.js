@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { verifyTwilioSignature } = require("../whatsapp/providers/twilio");
 
 /**
  * Verifies Meta's X-Hub-Signature-256 header on incoming webhook POSTs,
@@ -12,7 +13,7 @@ const crypto = require("crypto");
  * set yet (the simulator signs its requests for real when the secret IS
  * set, so this bypass is only a fallback, not the primary test path).
  */
-function verifyWebhookSignature(req, res, next) {
+function verifyMetaSignature(req, res, next) {
   if (process.env.VERIFY_WEBHOOK_SIGNATURE === "false") {
     return next();
   }
@@ -47,6 +48,14 @@ function verifyWebhookSignature(req, res, next) {
   }
 
   next();
+}
+
+/** Dispatches to the Meta or Twilio signature check based on WHATSAPP_PROVIDER — see src/whatsapp/client.js for the matching send-side dispatcher. */
+function verifyWebhookSignature(req, res, next) {
+  if (process.env.WHATSAPP_PROVIDER === "twilio") {
+    return verifyTwilioSignature(req, res, next);
+  }
+  return verifyMetaSignature(req, res, next);
 }
 
 module.exports = { verifyWebhookSignature };
