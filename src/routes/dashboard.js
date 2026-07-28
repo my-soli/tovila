@@ -40,7 +40,7 @@ router.use(async (req, res, next) => {
 // The default landing page: what needs the seller's attention right now,
 // rather than a raw activity feed. Pulls from the same data the
 // Conversations/Orders/Stats pages already show — no new service functions.
-router.get("/", async (req, res) => {
+router.get("/overview", async (req, res) => {
   const [conversations, leads, stats] = await Promise.all([
     listConversationsWithPreview(req.currentSeller.id),
     listLeads(req.currentSeller.id),
@@ -139,7 +139,7 @@ router.post("/onboarding", async (req, res) => {
     faqs: parseFaqsFromBody(body),
   });
 
-  res.redirect(`/?sellerId=${seller.id}`);
+  res.redirect(`/overview?sellerId=${seller.id}`);
 });
 
 function parseDeliveryInfoFromBody(body) {

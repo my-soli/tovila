@@ -14,7 +14,7 @@
       <div class="brand"><img src="/logo.svg" alt="Tovila" /></div>
       <% if (typeof currentSeller !== 'undefined' && currentSeller) { %>
         <nav class="main-nav">
-          <a href="/?sellerId=<%= currentSeller.id %>" class="<%= path === '/' ? 'active' : '' %>">Overview</a>
+          <a href="/overview?sellerId=<%= currentSeller.id %>" class="<%= path === '/overview' ? 'active' : '' %>">Overview</a>
           <a href="/conversations?sellerId=<%= currentSeller.id %>" class="<%= path === '/conversations' ? 'active' : '' %>">Conversations</a>
           <a href="/leads?sellerId=<%= currentSeller.id %>" class="<%= path === '/leads' ? 'active' : '' %>">Orders</a>
           <a href="/products?sellerId=<%= currentSeller.id %>" class="<%= path === '/products' ? 'active' : '' %>">Products &amp; FAQs</a>
@@ -36,6 +36,7 @@
           </label>
         <% } %>
         <a href="/onboarding" class="btn-outline <%= path === '/onboarding' ? 'active' : '' %>">+ Add Seller</a>
+        <a href="/logout" class="logout-link">Log out</a>
       </div>
     </aside>
     <div class="main-area">

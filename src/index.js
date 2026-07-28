@@ -3,6 +3,7 @@ const path = require("path");
 const express = require("express");
 const webhookRouter = require("./routes/webhook");
 const dashboardRouter = require("./routes/dashboard");
+const marketingRouter = require("./routes/marketing");
 const { dashboardAuth } = require("./middleware/auth");
 
 const app = express();
@@ -31,7 +32,12 @@ app.get("/health", (_req, res) => {
 // WhatsApp calls this directly — must stay unauthenticated.
 app.use("/webhook", webhookRouter);
 
-// Everything else is the demo dashboard, gated behind Basic Auth.
+// Public marketing site + login/logout — must stay unauthenticated, and
+// mounted before the dashboard auth gate below so /login and /logout are
+// reachable without a session.
+app.use("/", marketingRouter);
+
+// Everything else is the seller dashboard, gated behind a real login.
 app.use(dashboardAuth);
 app.use("/", dashboardRouter);
 

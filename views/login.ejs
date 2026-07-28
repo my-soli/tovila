@@ -1,0 +1,27 @@
+<%- include('partials/public-header', { pageTitle: 'Log in — Tovila' }) %>
+
+<div class="login-wrapper">
+  <div class="login-card">
+    <img src="/logo.svg" alt="Tovila" class="login-logo" />
+    <h1>Log in</h1>
+
+    <% if (error) { %>
+      <p class="login-error">Incorrect username or password.</p>
+    <% } %>
+
+    <form method="POST" action="/login" class="login-form">
+      <input type="hidden" name="next" value="<%= next %>" />
+      <label>Username
+        <input type="text" name="username" required autofocus />
+      </label>
+      <label>Password
+        <input type="password" name="password" required />
+      </label>
+      <button type="submit">Log in</button>
+    </form>
+
+    <a href="/" class="back-home">&larr; Back to home</a>
+  </div>
+</div>
+
+<%- include('partials/public-footer') %>

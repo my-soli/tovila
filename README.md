@@ -238,27 +238,37 @@ against real WhatsApp.
 
 ### 2g. Log into the dashboard
 
-Open [http://localhost:3000](http://localhost:3000) and log in with the
-`DASHBOARD_USERNAME` / `DASHBOARD_PASSWORD` you set in `.env` (your browser
-will show a native login prompt — this is HTTP Basic Auth, not a custom
-login page — see item 13 below for why this stays as-is for now).
+Open [http://localhost:3000](http://localhost:3000) — this is now a public
+marketing page. Click **Log in** and sign in with the
+`DASHBOARD_USERNAME` / `DASHBOARD_PASSWORD` you set in `.env` (a real
+branded login page, backed by a signed session cookie — see
+`SESSION_SECRET` below — not a browser Basic Auth prompt anymore).
 
-The **seller switcher** in the top nav flips between sellers — every page is
+The **seller switcher** in the sidebar flips between sellers — every page is
 scoped to whichever seller is currently selected.
 
-- **`/`** — conversations, most recent first, `needs_attention` ones pinned
-  to the top with a badge; click one for the full thread, the 24h messaging
-  window state, and (if flagged) a "Mark resolved" button
-- **`/leads`** — captured orders: inline status dropdown
-  (pending/confirmed/shipped/delivered/cancelled — changing it notifies the
-  customer over WhatsApp) and a "Mark paid" toggle
+- **`/overview`** — the default landing page after login: conversations
+  needing attention and orders to prepare, at a glance, plus a quick stats
+  strip and a 7-day activity chart
+- **`/conversations`** — every conversation, most recent first,
+  `needs_attention` ones pinned to the top with a badge; click one for the
+  full thread, the 24h messaging window state, and (if flagged) a "Mark
+  resolved" button
+- **`/leads`** — captured orders ("Orders" in the nav): inline status
+  dropdown (pending/confirmed/shipped/delivered/cancelled — changing it
+  notifies the customer over WhatsApp) and a "Mark paid" toggle
 - **`/products`** — view/edit the current seller's catalog, delivery fees,
   M-Pesa Till Number, notification email, and FAQs; saves immediately, the
   agent picks up changes on its very next reply
 - **`/onboarding`** — add a new seller (name, WhatsApp number, delivery
   info, initial products/FAQs) without touching the database
 - **`/stats`** — total conversations, leads captured, average response
-  time, messages this week/month
+  time, messages this week/month, an orders-by-status chart, and a
+  paid/unpaid split
+
+`SESSION_SECRET` (any long random string) signs the login session cookie —
+set it in `.env` alongside the dashboard credentials, and remember to add
+it to your host's environment variables too when you deploy (see section 6).
 
 ---
 
@@ -525,6 +535,9 @@ automatically with nothing to duplicate or keep in sync:
       Prisma's schema still references it, so set it anyway)
 - [ ] `DASHBOARD_USERNAME`
 - [ ] `DASHBOARD_PASSWORD`
+- [ ] `SESSION_SECRET` (signs the login session cookie — the dashboard
+      returns 500 on every request until this is set; only the web service
+      actually uses it, but setting it as a shared variable is harmless)
 - [ ] `RESEND_API_KEY` (optional)
 
 **Don't set `PORT`** — Railway injects it automatically for the web
