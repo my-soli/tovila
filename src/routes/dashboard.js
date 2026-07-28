@@ -25,6 +25,7 @@ router.use(async (req, res, next) => {
 
   res.locals.sellers = sellers;
   res.locals.currentSeller = currentSeller;
+  res.locals.currentPath = req.path;
   req.currentSeller = currentSeller;
 
   if (!currentSeller && req.path !== "/onboarding") {
@@ -36,7 +37,23 @@ router.use(async (req, res, next) => {
   next();
 });
 
+// The default landing page: what needs the seller's attention right now,
+// rather than a raw activity feed. Pulls from the same data the
+// Conversations/Orders/Stats pages already show — no new service functions.
 router.get("/", async (req, res) => {
+  const [conversations, leads, stats] = await Promise.all([
+    listConversationsWithPreview(req.currentSeller.id),
+    listLeads(req.currentSeller.id),
+    getSellerStats(req.currentSeller.id),
+  ]);
+
+  const needsAttention = conversations.filter((c) => c.status === "needs_attention");
+  const pendingOrders = leads.filter((l) => l.status === "pending");
+
+  res.render("overview", { needsAttention, pendingOrders, stats });
+});
+
+router.get("/conversations", async (req, res) => {
   const conversations = await listConversationsWithPreview(req.currentSeller.id);
   res.render("conversations", { conversations });
 });

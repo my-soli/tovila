@@ -19,8 +19,69 @@ async function getSellerStats(sellerId) {
   });
 
   const avgResponseTimeSeconds = await computeAvgResponseTimeSeconds(sellerId);
+  const ordersByStatus = await computeOrdersByStatus(sellerId);
+  const paidCount = await prisma.lead.count({ where: { conversation: { sellerId }, paid: true } });
+  const unpaidCount = totalLeads - paidCount;
+  const messagesByDay = await computeMessagesByDay(sellerId, 7);
 
-  return { totalConversations, totalLeads, avgResponseTimeSeconds, messagesThisWeek, messagesThisMonth };
+  return {
+    totalConversations,
+    totalLeads,
+    avgResponseTimeSeconds,
+    messagesThisWeek,
+    messagesThisMonth,
+    ordersByStatus,
+    paidCount,
+    unpaidCount,
+    messagesByDay,
+  };
+}
+
+/** Message counts for each of the last `days` calendar days (oldest first), for a simple activity chart. */
+async function computeMessagesByDay(sellerId, days) {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const rangeStart = new Date(startOfToday.getTime() - (days - 1) * DAY_MS);
+
+  const messages = await prisma.message.findMany({
+    where: { conversation: { sellerId }, timestamp: { gte: rangeStart } },
+    select: { timestamp: true },
+  });
+
+  const countByDay = {};
+  for (const m of messages) {
+    const key = m.timestamp.toISOString().slice(0, 10);
+    countByDay[key] = (countByDay[key] || 0) + 1;
+  }
+
+  const result = [];
+  for (let i = 0; i < days; i++) {
+    const day = new Date(rangeStart.getTime() + i * DAY_MS);
+    const key = day.toISOString().slice(0, 10);
+    result.push({
+      date: key,
+      label: day.toLocaleDateString(undefined, { weekday: "short" }),
+      count: countByDay[key] || 0,
+    });
+  }
+  return result;
+}
+
+const ORDER_STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+
+/** Count of orders per fulfillment status, in the fixed lifecycle order (zero-filled for statuses with no orders yet). */
+async function computeOrdersByStatus(sellerId) {
+  const leads = await prisma.lead.findMany({
+    where: { conversation: { sellerId } },
+    select: { status: true },
+  });
+
+  const countByStatus = {};
+  for (const lead of leads) {
+    countByStatus[lead.status] = (countByStatus[lead.status] || 0) + 1;
+  }
+
+  return ORDER_STATUSES.map((status) => ({ status, count: countByStatus[status] || 0 }));
 }
 
 /**

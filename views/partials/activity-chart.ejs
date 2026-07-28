@@ -1,0 +1,22 @@
+<%
+  const maxCount = Math.max(1, ...messagesByDay.map(d => d.count));
+  const peakIndex = messagesByDay.reduce((best, d, i) => d.count > messagesByDay[best].count ? i : best, 0);
+%>
+<div class="bar-chart" role="img" aria-label="Messages per day for the last 7 days">
+  <% messagesByDay.forEach((d, i) => { %>
+    <div class="bar-col">
+      <% if (i === peakIndex && d.count > 0) { %><div class="bar-value-badge"><%= d.count %></div><% } %>
+      <div class="bar-track">
+        <div
+          class="bar-fill"
+          style="height: <%= Math.round((d.count / maxCount) * 100) %>%"
+          data-tooltip="<%= d.label %>: <%= d.count %> message<%= d.count === 1 ? '' : 's' %>"
+          tabindex="0"
+        ></div>
+      </div>
+      <div class="bar-label"><%= d.label %></div>
+    </div>
+  <% }) %>
+</div>
+
+<%- include('chart-tooltip-script') %>

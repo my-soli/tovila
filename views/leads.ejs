@@ -1,10 +1,11 @@
 <%- include('partials/header') %>
 
-<h1>Leads</h1>
+<h1>Orders</h1>
 
 <% if (leads.length === 0) { %>
-  <p class="empty">No leads captured yet.</p>
+  <p class="empty">No orders captured yet.</p>
 <% } else { %>
+  <div class="table-scroll">
   <table class="list-table">
     <thead>
       <tr>
@@ -43,6 +44,7 @@
       <% }) %>
     </tbody>
   </table>
+  </div>
 <% } %>
 
 <%- include('partials/footer') %>

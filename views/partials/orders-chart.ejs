@@ -1,0 +1,58 @@
+<%
+  const STATUS_COLORS = {
+    pending: "#7CBB9B",
+    confirmed: "#4E9873",
+    shipped: "#1F7A54",
+    delivered: "#145C3D",
+    cancelled: "#9C3B2E",
+  };
+  const maxOrderCount = Math.max(1, ...ordersByStatus.map(o => o.count));
+%>
+<div class="hbar-chart" role="img" aria-label="Orders by fulfillment status">
+  <% ordersByStatus.forEach(o => { %>
+    <div class="hbar-row">
+      <div class="hbar-label"><%= o.status %></div>
+      <div class="hbar-track">
+        <div
+          class="hbar-fill"
+          style="width: <%= Math.round((o.count / maxOrderCount) * 100) %>%; background: <%= STATUS_COLORS[o.status] || '#6B6B70' %>;"
+          data-tooltip="<%= o.status %>: <%= o.count %> order<%= o.count === 1 ? '' : 's' %>"
+          tabindex="0"
+        ></div>
+      </div>
+      <div class="hbar-value"><%= o.count %></div>
+    </div>
+  <% }) %>
+</div>
+
+<% const totalPayment = paidCount + unpaidCount; %>
+<div class="payment-bar-wrapper">
+  <div class="payment-bar">
+    <% if (totalPayment === 0) { %>
+      <div class="payment-segment" style="width: 100%; background: var(--border);"></div>
+    <% } else { %>
+      <% if (paidCount > 0) { %>
+        <div
+          class="payment-segment"
+          style="width: <%= Math.round((paidCount / totalPayment) * 100) %>%; background: var(--primary);"
+          data-tooltip="Paid: <%= paidCount %>"
+          tabindex="0"
+        ></div>
+      <% } %>
+      <% if (unpaidCount > 0) { %>
+        <div
+          class="payment-segment"
+          style="width: <%= Math.round((unpaidCount / totalPayment) * 100) %>%; background: var(--tertiary);"
+          data-tooltip="Unpaid: <%= unpaidCount %>"
+          tabindex="0"
+        ></div>
+      <% } %>
+    <% } %>
+  </div>
+  <div class="payment-legend">
+    <span><span class="legend-swatch" style="background: var(--primary);"></span> Paid (<%= paidCount %>)</span>
+    <span><span class="legend-swatch" style="background: var(--tertiary);"></span> Unpaid (<%= unpaidCount %>)</span>
+  </div>
+</div>
+
+<%- include('chart-tooltip-script') %>

@@ -1,0 +1,42 @@
+<script>
+(function () {
+  if (window.__tovilaChartTooltipInit) return;
+  window.__tovilaChartTooltipInit = true;
+
+  var tip = document.createElement("div");
+  tip.className = "chart-tooltip";
+  tip.setAttribute("role", "tooltip");
+  document.body.appendChild(tip);
+
+  function show(el) {
+    var text = el.getAttribute("data-tooltip");
+    if (!text) return;
+    tip.textContent = text;
+    tip.style.display = "block";
+    var rect = el.getBoundingClientRect();
+    tip.style.left = rect.left + rect.width / 2 + window.scrollX + "px";
+    tip.style.top = rect.top + window.scrollY - 8 + "px";
+  }
+
+  function hide() {
+    tip.style.display = "none";
+  }
+
+  document.addEventListener("mouseover", function (e) {
+    var el = e.target.closest("[data-tooltip]");
+    if (el) show(el);
+  });
+  document.addEventListener("mouseout", function (e) {
+    var el = e.target.closest("[data-tooltip]");
+    if (el) hide();
+  });
+  document.addEventListener("focusin", function (e) {
+    var el = e.target.closest("[data-tooltip]");
+    if (el) show(el);
+  });
+  document.addEventListener("focusout", function (e) {
+    var el = e.target.closest("[data-tooltip]");
+    if (el) hide();
+  });
+})();
+</script>

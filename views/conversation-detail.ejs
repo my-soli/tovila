@@ -1,6 +1,6 @@
 <%- include('partials/header') %>
 
-<p><a href="/?sellerId=<%= conversation.seller.id %>">&larr; Back to conversations</a></p>
+<p><a href="/conversations?sellerId=<%= conversation.seller.id %>">&larr; Back to conversations</a></p>
 <h1><%= conversation.customerPhone %></h1>
 <p class="hint">
   <%= conversation.seller.name %> &middot;

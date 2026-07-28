@@ -1,0 +1,80 @@
+<%- include('partials/header') %>
+
+<h1>Overview</h1>
+<p class="hint"><%= currentSeller.name %></p>
+
+<div class="stats-strip">
+  <div class="stat-tile">
+    <div class="stat-value"><%= stats.totalConversations %></div>
+    <div class="stat-label">Total conversations</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value"><%= stats.totalLeads %></div>
+    <div class="stat-label">Orders captured</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value">
+      <% if (stats.avgResponseTimeSeconds === null) { %>
+        &mdash;
+      <% } else if (stats.avgResponseTimeSeconds < 60) { %>
+        <%= stats.avgResponseTimeSeconds %>s
+      <% } else { %>
+        <%= Math.round(stats.avgResponseTimeSeconds / 60) %>m
+      <% } %>
+    </div>
+    <div class="stat-label">Avg. response time</div>
+  </div>
+</div>
+
+<h2>Activity — last 7 days</h2>
+<div class="chart-card">
+  <%- include('partials/activity-chart', { messagesByDay: stats.messagesByDay }) %>
+</div>
+
+<div class="overview-columns">
+  <div class="attention-card">
+    <h2>Needs your attention <% if (needsAttention.length > 0) { %><span class="action-count"><%= needsAttention.length %></span><% } %></h2>
+    <% if (needsAttention.length === 0) { %>
+      <p class="empty">Nothing needs attention right now.</p>
+    <% } else { %>
+      <ul class="action-list">
+        <% needsAttention.forEach(c => { %>
+          <li>
+            <a href="/conversations/<%= c.id %>">
+              <span>
+                <span class="action-title"><%= c.customerPhone %></span><br />
+                <span class="action-meta">
+                  <% if (c.lastMessage) { %><%= c.lastMessage.sender === 'agent' ? 'You: ' : '' %><%= c.lastMessage.content %><% } else { %>No messages yet<% } %>
+                </span>
+              </span>
+              <span class="nowrap action-meta"><%= new Date(c.lastActivityAt).toLocaleString() %></span>
+            </a>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </div>
+
+  <div class="attention-card">
+    <h2>Orders to prepare <% if (pendingOrders.length > 0) { %><span class="action-count"><%= pendingOrders.length %></span><% } %></h2>
+    <% if (pendingOrders.length === 0) { %>
+      <p class="empty">No pending orders.</p>
+    <% } else { %>
+      <ul class="action-list">
+        <% pendingOrders.forEach(l => { %>
+          <li>
+            <a href="/leads?sellerId=<%= currentSeller.id %>">
+              <span>
+                <span class="action-title"><%= l.quantity %>x <%= l.item %><% if (l.variant) { %> (<%= l.variant %>)<% } %></span><br />
+                <span class="action-meta"><%= l.customerName %> &middot; <%= l.deliveryLocation %></span>
+              </span>
+              <span class="nowrap action-meta"><%= new Date(l.createdAt).toLocaleString() %></span>
+            </a>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

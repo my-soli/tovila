@@ -5,6 +5,7 @@
 <% if (conversations.length === 0) { %>
   <p class="empty">No conversations yet. Once WhatsApp messages come in (or you run <code>npm run seed</code>), they'll show up here.</p>
 <% } else { %>
+  <div class="table-scroll">
   <table class="list-table">
     <thead>
       <tr><th>Customer</th><th>Status</th><th>Last message</th><th>When</th></tr>
@@ -26,6 +27,7 @@
       <% }) %>
     </tbody>
   </table>
+  </div>
 <% } %>
 
 <%- include('partials/footer') %>
