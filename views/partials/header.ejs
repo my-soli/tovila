@@ -11,42 +11,49 @@
   <% const path = typeof currentPath !== 'undefined' ? currentPath : ''; %>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand"><img src="/logo.svg" alt="Tovila" /></div>
-      <% if (typeof currentSeller !== 'undefined' && currentSeller) { %>
-        <nav class="main-nav">
-          <a href="/overview?sellerId=<%= currentSeller.id %>" class="<%= path === '/overview' ? 'active' : '' %>">Overview</a>
-          <a href="/conversations?sellerId=<%= currentSeller.id %>" class="<%= path === '/conversations' ? 'active' : '' %>">Conversations</a>
-          <a href="/leads?sellerId=<%= currentSeller.id %>" class="<%= path === '/leads' ? 'active' : '' %>">Orders</a>
-          <a href="/products?sellerId=<%= currentSeller.id %>" class="<%= path === '/products' ? 'active' : '' %>">Products &amp; FAQs</a>
-          <a href="/stats?sellerId=<%= currentSeller.id %>" class="<%= path === '/stats' ? 'active' : '' %>">Stats</a>
-        </nav>
-      <% } %>
-      <div class="sidebar-footer">
-        <% if (typeof isAdminSession !== 'undefined' && isAdminSession) { %>
-          <label class="seller-switcher-label">
-            Viewing
-            <select
-              class="seller-switcher"
-              onchange="const u = new URL(location.href); u.searchParams.set('sellerId', this.value); location.href = u.toString();"
-            >
-              <% sellers.forEach(s => { %>
-                <option value="<%= s.id %>" <%= s.id === currentSeller.id ? 'selected' : '' %>><%= s.name %></option>
-              <% }) %>
-            </select>
-          </label>
-          <a href="/onboarding" class="btn-outline <%= path === '/onboarding' ? 'active' : '' %>">+ Add Seller</a>
-        <% } else if (typeof currentSeller !== 'undefined' && currentSeller && currentSeller.trialEndsAt) { %>
-          <% const daysLeft = Math.ceil((new Date(currentSeller.trialEndsAt) - Date.now()) / (24 * 60 * 60 * 1000)); %>
-          <div class="trial-banner <%= daysLeft <= 0 ? 'trial-ended' : '' %>">
-            <% if (daysLeft > 0) { %>
-              Free trial: <strong><%= daysLeft %></strong> day<%= daysLeft === 1 ? '' : 's' %> left
-            <% } else { %>
-              Your free trial has ended
-            <% } %>
-            <a href="/pricing">Upgrade &rarr;</a>
-          </div>
+      <div class="sidebar-top">
+        <div class="brand"><img src="/logo.svg" alt="Tovila" /></div>
+        <button type="button" class="nav-toggle" data-nav-toggle="sidebar-collapsible" aria-label="Toggle menu" aria-expanded="false" aria-controls="sidebar-collapsible">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <div class="sidebar-collapsible" id="sidebar-collapsible">
+        <% if (typeof currentSeller !== 'undefined' && currentSeller) { %>
+          <nav class="main-nav">
+            <a href="/overview?sellerId=<%= currentSeller.id %>" class="<%= path === '/overview' ? 'active' : '' %>">Overview</a>
+            <a href="/conversations?sellerId=<%= currentSeller.id %>" class="<%= path === '/conversations' ? 'active' : '' %>">Conversations</a>
+            <a href="/leads?sellerId=<%= currentSeller.id %>" class="<%= path === '/leads' ? 'active' : '' %>">Orders</a>
+            <a href="/products?sellerId=<%= currentSeller.id %>" class="<%= path === '/products' ? 'active' : '' %>">Products &amp; FAQs</a>
+            <a href="/stats?sellerId=<%= currentSeller.id %>" class="<%= path === '/stats' ? 'active' : '' %>">Stats</a>
+          </nav>
         <% } %>
-        <a href="/logout" class="logout-link">Log out</a>
+        <div class="sidebar-footer">
+          <% if (typeof isAdminSession !== 'undefined' && isAdminSession) { %>
+            <label class="seller-switcher-label">
+              Viewing
+              <select
+                class="seller-switcher"
+                onchange="const u = new URL(location.href); u.searchParams.set('sellerId', this.value); location.href = u.toString();"
+              >
+                <% sellers.forEach(s => { %>
+                  <option value="<%= s.id %>" <%= s.id === currentSeller.id ? 'selected' : '' %>><%= s.name %></option>
+                <% }) %>
+              </select>
+            </label>
+            <a href="/onboarding" class="btn-outline <%= path === '/onboarding' ? 'active' : '' %>">+ Add Seller</a>
+          <% } else if (typeof currentSeller !== 'undefined' && currentSeller && currentSeller.trialEndsAt) { %>
+            <% const daysLeft = Math.ceil((new Date(currentSeller.trialEndsAt) - Date.now()) / (24 * 60 * 60 * 1000)); %>
+            <div class="trial-banner <%= daysLeft <= 0 ? 'trial-ended' : '' %>">
+              <% if (daysLeft > 0) { %>
+                Free trial: <strong><%= daysLeft %></strong> day<%= daysLeft === 1 ? '' : 's' %> left
+              <% } else { %>
+                Your free trial has ended
+              <% } %>
+              <a href="/pricing">Upgrade &rarr;</a>
+            </div>
+          <% } %>
+          <a href="/logout" class="logout-link">Log out</a>
+        </div>
       </div>
     </aside>
     <div class="main-area">
