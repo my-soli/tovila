@@ -1,15 +1,32 @@
 <%- include('partials/header') %>
 
 <h1>Products &amp; FAQs</h1>
-<p class="hint">Editing "<%= seller.name %>" (<%= seller.whatsappNumber %>). Changes apply immediately to the agent's next reply.</p>
+<p class="hint">
+  Editing "<%= seller.name %>"<% if (seller.whatsappNumber) { %> (<%= seller.whatsappNumber %>)<% } %>.
+  Changes apply immediately to the agent's next reply.
+</p>
 
+<% if (typeof welcome !== 'undefined' && welcome) { %>
+  <p class="success">Welcome to Tovila! Your 7-day free trial has started — build your catalog below, then let us know when you're ready to connect WhatsApp.</p>
+<% } %>
 <% if (saved) { %><p class="success">Saved.</p><% } %>
+<% if (typeof error !== 'undefined' && error === 'whatsapp_taken') { %>
+  <p class="login-error">That WhatsApp number is already connected to another seller.</p>
+<% } %>
 
 <form method="POST" action="/products?sellerId=<%= seller.id %>" class="editor-form">
-  <section>
-    <h2>Seller info</h2>
+  <section class="editor-section">
+    <div class="section-header">
+      <div class="section-icon icon-primary">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M12 12c2.7 0 4-1.8 4-4s-1.3-4-4-4-4 1.8-4 4 1.3 4 4 4Z" stroke="#fff" stroke-width="2"/><path d="M4 21c0-3.9 3.6-6 8-6s8 2.1 8 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <h2>Seller info</h2>
+    </div>
     <label>Name
       <input type="text" name="sellerName" value="<%= seller.name %>" />
+    </label>
+    <label>WhatsApp number <span class="hint">(no leading "+", e.g. 2547XXXXXXXX — leave blank if not connected yet)</span>
+      <input type="text" name="whatsappNumber" value="<%= seller.whatsappNumber || '' %>" placeholder="Not connected yet" />
     </label>
     <label>Notification email (for "needs attention" alerts)
       <input type="email" name="sellerNotificationEmail" value="<%= seller.sellerNotificationEmail || '' %>" />
@@ -19,8 +36,13 @@
     </label>
   </section>
 
-  <section>
-    <h2>Delivery</h2>
+  <section class="editor-section">
+    <div class="section-header">
+      <div class="section-icon icon-accent">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M3 11h18M6 11V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4M4 11v8h16v-8" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2>Delivery</h2>
+    </div>
     <div class="delivery-grid">
       <label>Nairobi fee (KES)
         <input type="number" name="nairobiFee" value="<%= seller.deliveryInfo.nairobi.feeKES %>" />
@@ -37,48 +59,65 @@
     </div>
   </section>
 
-  <section>
-    <h2>Products</h2>
-    <div class="table-scroll">
-    <table class="editor-table">
-      <thead>
-        <tr><th>Name</th><th>Price (KES)</th><th>Sizes (comma-separated)</th><th>Stock</th></tr>
-      </thead>
-      <tbody>
-        <% const productRows = seller.products.concat([{}, {}]); %>
-        <% productRows.forEach(p => { %>
-          <tr>
-            <td><input type="text" name="productName" value="<%= p.name || '' %>" /></td>
-            <td><input type="number" name="productPrice" value="<%= p.priceKES || '' %>" /></td>
-            <td><input type="text" name="productSizes" value="<%= (p.sizes || []).join(', ') %>" /></td>
-            <td><input type="number" name="productStock" value="<%= p.stock || '' %>" /></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+  <section class="editor-section">
+    <div class="section-header">
+      <div class="section-icon icon-danger">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="5" y="4" width="14" height="17" rx="2" stroke="#fff" stroke-width="2"/><path d="M9 3h6v3H9V3Z" fill="#fff"/></svg>
+      </div>
+      <h2>Products</h2>
     </div>
-    <p class="hint">Leave a row's name blank to remove it. Use the blank rows at the bottom to add new products.</p>
+    <div id="products-list" class="repeatable-list">
+      <% seller.products.forEach(p => { %>
+        <div class="repeatable-row">
+          <input type="text" name="productName" placeholder="Product name" value="<%= p.name || '' %>" />
+          <input type="number" name="productPrice" placeholder="Price (KES)" value="<%= p.priceKES || '' %>" />
+          <input type="text" name="productSizes" placeholder="Sizes (comma-separated)" value="<%= (p.sizes || []).join(', ') %>" />
+          <input type="number" name="productStock" placeholder="Stock" value="<%= p.stock || '' %>" />
+          <button type="button" class="remove-row-button" aria-label="Remove product">&times;</button>
+        </div>
+      <% }) %>
+    </div>
+    <button type="button" class="add-row-button" data-target="products-list" data-template="product-row-template">+ Add product</button>
+    <template id="product-row-template">
+      <div class="repeatable-row">
+        <input type="text" name="productName" placeholder="Product name" />
+        <input type="number" name="productPrice" placeholder="Price (KES)" />
+        <input type="text" name="productSizes" placeholder="Sizes (comma-separated)" />
+        <input type="number" name="productStock" placeholder="Stock" />
+        <button type="button" class="remove-row-button" aria-label="Remove product">&times;</button>
+      </div>
+    </template>
+    <p class="hint">Leave a row's name blank to remove it when you save.</p>
   </section>
 
-  <section>
-    <h2>FAQs</h2>
-    <div class="table-scroll">
-    <table class="editor-table">
-      <thead><tr><th>Question</th><th>Answer</th></tr></thead>
-      <tbody>
-        <% const faqRows = seller.faqs.concat([{}, {}]); %>
-        <% faqRows.forEach(f => { %>
-          <tr>
-            <td><input type="text" name="faqQuestion" value="<%= f.question || '' %>" /></td>
-            <td><input type="text" name="faqAnswer" value="<%= f.answer || '' %>" /></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+  <section class="editor-section">
+    <div class="section-header">
+      <div class="section-icon icon-tertiary">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M12 18h.01M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4" stroke="#1C1C1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#1C1C1E" stroke-width="2"/></svg>
+      </div>
+      <h2>FAQs</h2>
     </div>
+    <div id="faqs-list" class="repeatable-list">
+      <% seller.faqs.forEach(f => { %>
+        <div class="repeatable-row repeatable-row-faq">
+          <input type="text" name="faqQuestion" placeholder="Question" value="<%= f.question || '' %>" />
+          <input type="text" name="faqAnswer" placeholder="Answer" value="<%= f.answer || '' %>" />
+          <button type="button" class="remove-row-button" aria-label="Remove FAQ">&times;</button>
+        </div>
+      <% }) %>
+    </div>
+    <button type="button" class="add-row-button" data-target="faqs-list" data-template="faq-row-template">+ Add FAQ</button>
+    <template id="faq-row-template">
+      <div class="repeatable-row repeatable-row-faq">
+        <input type="text" name="faqQuestion" placeholder="Question" />
+        <input type="text" name="faqAnswer" placeholder="Answer" />
+        <button type="button" class="remove-row-button" aria-label="Remove FAQ">&times;</button>
+      </div>
+    </template>
   </section>
 
   <button type="submit">Save changes</button>
 </form>
 
+<%- include('partials/repeatable-rows-script') %>
 <%- include('partials/footer') %>

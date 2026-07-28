@@ -1,0 +1,24 @@
+<script>
+(function () {
+  if (window.__tovilaRepeatableRowsInit) return;
+  window.__tovilaRepeatableRowsInit = true;
+
+  document.addEventListener("click", function (e) {
+    var addBtn = e.target.closest(".add-row-button");
+    if (addBtn) {
+      var template = document.getElementById(addBtn.dataset.template);
+      var target = document.getElementById(addBtn.dataset.target);
+      if (template && target) {
+        target.appendChild(template.content.cloneNode(true));
+      }
+      return;
+    }
+
+    var removeBtn = e.target.closest(".remove-row-button");
+    if (removeBtn) {
+      var row = removeBtn.closest(".repeatable-row");
+      if (row) row.remove();
+    }
+  });
+})();
+</script>

@@ -1,0 +1,50 @@
+<%- include('partials/public-header', { pageTitle: 'Start your free trial — Tovila' }) %>
+
+<div class="login-wrapper">
+  <div class="login-card signup-card">
+    <img src="/logo.svg" alt="Tovila" class="login-logo" />
+    <h1>Start your 7-day free trial</h1>
+    <p class="hint">No card required.</p>
+
+    <% if (error === 'invalid') { %>
+      <p class="login-error">Please fill in your business name, email, and a password of at least 8 characters.</p>
+    <% } else if (error === 'exists') { %>
+      <p class="login-error">An account with that email already exists. <a href="/login">Log in instead</a>.</p>
+    <% } %>
+
+    <form method="POST" action="/signup" class="login-form">
+      <label>Business name
+        <input type="text" name="name" required autofocus />
+      </label>
+      <label>Email
+        <input type="email" name="email" required />
+      </label>
+      <label>Password
+        <input type="password" name="password" minlength="8" required />
+      </label>
+
+      <fieldset class="channel-fieldset">
+        <legend>Which channels do you want Tovila on?</legend>
+        <label class="channel-checkbox">
+          <input type="checkbox" name="channels" value="whatsapp" checked />
+          WhatsApp
+        </label>
+        <label class="channel-checkbox">
+          <input type="checkbox" name="channels" value="instagram" />
+          Instagram
+        </label>
+        <label class="channel-checkbox channel-checkbox-disabled">
+          <input type="checkbox" disabled />
+          TikTok <span class="coming-soon-tag">Coming soon</span>
+        </label>
+        <p class="hint">Connecting any channel still needs a short manual setup step with us after you sign up — we'll follow up by email.</p>
+      </fieldset>
+
+      <button type="submit">Start free trial</button>
+    </form>
+
+    <a href="/login" class="back-home">Already have an account? Log in</a>
+  </div>
+</div>
+
+<%- include('partials/public-footer') %>

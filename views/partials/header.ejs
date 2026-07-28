@@ -22,7 +22,7 @@
         </nav>
       <% } %>
       <div class="sidebar-footer">
-        <% if (typeof currentSeller !== 'undefined' && currentSeller && sellers.length > 0) { %>
+        <% if (typeof isAdminSession !== 'undefined' && isAdminSession) { %>
           <label class="seller-switcher-label">
             Viewing
             <select
@@ -34,10 +34,25 @@
               <% }) %>
             </select>
           </label>
+          <a href="/onboarding" class="btn-outline <%= path === '/onboarding' ? 'active' : '' %>">+ Add Seller</a>
+        <% } else if (typeof currentSeller !== 'undefined' && currentSeller && currentSeller.trialEndsAt) { %>
+          <% const daysLeft = Math.ceil((new Date(currentSeller.trialEndsAt) - Date.now()) / (24 * 60 * 60 * 1000)); %>
+          <div class="trial-banner <%= daysLeft <= 0 ? 'trial-ended' : '' %>">
+            <% if (daysLeft > 0) { %>
+              Free trial: <strong><%= daysLeft %></strong> day<%= daysLeft === 1 ? '' : 's' %> left
+            <% } else { %>
+              Your free trial has ended
+            <% } %>
+            <a href="/pricing">Upgrade &rarr;</a>
+          </div>
         <% } %>
-        <a href="/onboarding" class="btn-outline <%= path === '/onboarding' ? 'active' : '' %>">+ Add Seller</a>
         <a href="/logout" class="logout-link">Log out</a>
       </div>
     </aside>
     <div class="main-area">
+      <% if (typeof currentSeller !== 'undefined' && currentSeller && !currentSeller.whatsappNumber) { %>
+        <div class="channel-banner">
+          Your WhatsApp number isn't connected yet — contact us to finish setup.
+        </div>
+      <% } %>
       <main class="container">

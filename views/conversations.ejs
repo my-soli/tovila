@@ -13,7 +13,7 @@
     <tbody>
       <% conversations.forEach(c => { %>
         <tr class="clickable-row" onclick="window.location='/conversations/<%= c.id %>'">
-          <td><%= c.customerPhone %></td>
+          <td><%= c.customerPhone %> <span class="channel-tag channel-<%= c.channel %>"><%= c.channel %></span></td>
           <td><span class="status-badge status-<%= c.status %>"><%= c.status.replace('_', ' ') %></span></td>
           <td class="preview">
             <% if (c.lastMessage) { %>

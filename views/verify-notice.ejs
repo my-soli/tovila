@@ -1,0 +1,18 @@
+<%- include('partials/public-header', { pageTitle: 'Verify your email — Tovila' }) %>
+
+<div class="login-wrapper">
+  <div class="login-card">
+    <img src="/logo.svg" alt="Tovila" class="login-logo" />
+    <% if (typeof expired !== 'undefined' && expired) { %>
+      <h1>Link expired or invalid</h1>
+      <p class="hint">That verification link has expired or was already used. Try signing up again, or log in if you already verified.</p>
+      <a href="/signup" class="btn-primary" style="margin-top: var(--sp-4);">Back to signup</a>
+    <% } else { %>
+      <h1>Check your email</h1>
+      <p class="hint">We sent a verification link to <strong><%= email %></strong>. Click it to activate your 7-day free trial.</p>
+    <% } %>
+    <a href="/" class="back-home">&larr; Back to home</a>
+  </div>
+</div>
+
+<%- include('partials/public-footer') %>

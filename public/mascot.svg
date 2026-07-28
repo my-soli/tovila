@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 240" width="220" height="240">
+  <!-- soft shadow -->
+  <ellipse cx="110" cy="222" rx="55" ry="10" fill="#1C1C1E" opacity="0.06"/>
+
+  <!-- body: rounded speech-bubble character -->
+  <path d="M40 40
+           Q40 12 68 12
+           L152 12
+           Q180 12 180 40
+           L180 120
+           Q180 148 152 148
+           L110 148
+           L88 176
+           L92 148
+           L68 148
+           Q40 148 40 120
+           Z"
+        fill="#1F7A54"/>
+
+  <!-- cheeks -->
+  <circle cx="66" cy="98" r="9" fill="#F6C9D0" opacity="0.85"/>
+  <circle cx="154" cy="98" r="9" fill="#F6C9D0" opacity="0.85"/>
+
+  <!-- eyes -->
+  <circle cx="82" cy="78" r="10" fill="#FAFAF9"/>
+  <circle cx="138" cy="78" r="10" fill="#FAFAF9"/>
+  <circle cx="85" cy="80" r="4" fill="#1C1C1E"/>
+  <circle cx="141" cy="80" r="4" fill="#1C1C1E"/>
+
+  <!-- smile -->
+  <path d="M92 104 Q110 118 128 104" stroke="#FAFAF9" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- arms -->
+  <path d="M40 90 Q18 100 22 122" stroke="#1F7A54" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M180 90 Q198 104 188 124" stroke="#1F7A54" stroke-width="10" fill="none" stroke-linecap="round"/>
+
+  <!-- shopping bag held in right arm -->
+  <g transform="translate(168,118)">
+    <rect x="0" y="10" width="34" height="30" rx="4" fill="#E8A33D"/>
+    <path d="M6 10 L6 2 Q6 -8 17 -8 Q28 -8 28 2 L28 10" stroke="#E8A33D" stroke-width="5" fill="none"/>
+  </g>
+</svg>

@@ -1,29 +1,51 @@
 <%- include('partials/public-header') %>
 
 <section class="hero">
-  <h1>Your AI commerce assistant for chat-first selling</h1>
-  <p class="hero-sub">
-    Tovila replies to customers instantly, captures orders accurately, and
-    knows when to bring you in — so you stop typing the same answers over
-    and over and start closing more sales.
-  </p>
-  <a href="/login" class="btn-primary">Log in</a>
+  <div class="hero-copy">
+    <h1>Your AI commerce assistant for chat-first selling</h1>
+    <p class="hero-sub">
+      Tovila replies to customers instantly, captures orders accurately, and
+      knows when to bring you in — so you stop typing the same answers over
+      and over and start closing more sales.
+    </p>
+    <div class="hero-ctas">
+      <a href="/signup" class="btn-primary">Start free trial</a>
+      <a href="/login" class="btn-secondary">Log in</a>
+    </div>
+    <p class="hero-fineprint">7 days free, no card required.</p>
+  </div>
+  <div class="hero-visual">
+    <img src="/mascot.svg" alt="" class="hero-mascot" />
+    <%- include('partials/chat-mockup') %>
+  </div>
 </section>
 
 <section class="feature-grid" id="features">
   <div class="feature-card">
+    <div class="feature-icon icon-primary">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M4 5h16v11H9l-4 4V5Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+    </div>
     <h3>Replies in the customer's own words</h3>
     <p>English, Swahili, Sheng, or a natural mix — Tovila replies in whichever language the customer used, instantly, 24/7.</p>
   </div>
   <div class="feature-card">
+    <div class="feature-icon icon-accent">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><rect x="5" y="4" width="14" height="17" rx="2" stroke="#fff" stroke-width="2"/><path d="M9 3h6v3H9V3Z" fill="#fff"/><path d="M8.5 12.5l2 2 4-4.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
     <h3>Order capture &amp; tracking</h3>
     <p>Every order gets recorded automatically — item, quantity, delivery location, customer details — with a status you update as you fulfill it.</p>
   </div>
   <div class="feature-card">
+    <div class="feature-icon icon-danger">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M12 3 2 20h20L12 3Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="#fff"/></svg>
+    </div>
     <h3>Knows when to bring you in</h3>
     <p>Complaints, custom pricing requests, or genuine uncertainty get flagged to you directly, with a notification — Tovila never guesses on your behalf.</p>
   </div>
   <div class="feature-card">
+    <div class="feature-icon icon-tertiary">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="#1C1C1E" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </div>
     <h3>A real dashboard, not spreadsheets</h3>
     <p>See what needs your attention, orders to prepare, and real reporting on conversations, response time, and sales activity — all in one place.</p>
   </div>
@@ -50,8 +72,36 @@
   </div>
 </section>
 
+<section class="compare">
+  <h2>Why not just reply yourself?</h2>
+  <div class="compare-table">
+    <div class="compare-col compare-col-tovila">
+      <div class="compare-head"><img src="/logo.svg" alt="Tovila" /></div>
+      <div class="compare-row"><strong>Availability</strong><span>Instant replies, 24/7</span></div>
+      <div class="compare-row"><strong>Languages</strong><span>English, Swahili, Sheng, mixed</span></div>
+      <div class="compare-row"><strong>Orders</strong><span>Captured automatically, ready to fulfill</span></div>
+      <div class="compare-row"><strong>Tricky messages</strong><span>Flagged to you, never guessed</span></div>
+      <div class="compare-row"><strong>Reporting</strong><span>Real dashboard &amp; charts</span></div>
+    </div>
+    <div class="compare-col">
+      <div class="compare-head compare-head-muted">Manual DMs</div>
+      <div class="compare-row"><strong>Availability</strong><span>Whenever you're free to type</span></div>
+      <div class="compare-row"><strong>Languages</strong><span>Whatever you personally speak</span></div>
+      <div class="compare-row"><strong>Orders</strong><span>Scribbled in a notebook or lost in chat</span></div>
+      <div class="compare-row"><strong>Tricky messages</strong><span>You handle everything yourself</span></div>
+      <div class="compare-row"><strong>Reporting</strong><span>None</span></div>
+    </div>
+  </div>
+</section>
+
 <section class="coming-soon">
-  <p><strong>Live today:</strong> WhatsApp. <strong>Coming soon:</strong> Instagram and TikTok — the same assistant, wherever your customers message you.</p>
+  <p><strong>Live today:</strong> WhatsApp and Instagram. <strong>Coming soon:</strong> TikTok — the same assistant, wherever your customers message you.</p>
+</section>
+
+<section class="pricing-teaser">
+  <h2>KES 1,000/month, one simple plan</h2>
+  <p>Every feature included. 7-day free trial, no card required.</p>
+  <a href="/pricing" class="btn-secondary">See pricing</a>
 </section>
 
 <%- include('partials/public-footer') %>
