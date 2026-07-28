@@ -1,14 +1,17 @@
 const express = require("express");
 const { enqueueJob } = require("../jobs/queue");
-const { verifyWebhookSignature } = require("../middleware/verifySignature");
+const { verifyWebhookSignature, verifyMetaSignature } = require("../middleware/verifySignature");
 const { normalizeTwilioPayload } = require("../whatsapp/providers/twilio");
+const { normalizeInstagramPayload } = require("../instagram/providers/meta");
 
 const router = express.Router();
 
-// GET /webhook — Meta's one-time webhook verification challenge. Twilio has
+// Meta's one-time webhook verification challenge — shared by WhatsApp and
+// Instagram, since both ride the same Meta App Dashboard webhook
+// subscription mechanism (just a different subscribed field). Twilio has
 // no equivalent GET handshake, so this route is simply never hit when
 // WHATSAPP_PROVIDER=twilio.
-router.get("/", (req, res) => {
+function verifyMetaChallenge(req, res) {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
@@ -20,7 +23,10 @@ router.get("/", (req, res) => {
 
   console.warn("Webhook verification failed.");
   return res.sendStatus(403);
-});
+}
+
+router.get("/", verifyMetaChallenge);
+router.get("/instagram", verifyMetaChallenge);
 
 // POST /webhook — incoming WhatsApp messages / status updates. Both
 // providers expect a fast 2xx or they'll retry (and redeliver) — so we ack
@@ -33,11 +39,27 @@ router.get("/", (req, res) => {
 router.post("/", verifyWebhookSignature, (req, res) => {
   res.status(200).end();
 
-  const payload =
+  const normalized =
     process.env.WHATSAPP_PROVIDER === "twilio" ? normalizeTwilioPayload(req.body) : req.body;
+  const payload = { ...normalized, channel: "whatsapp" };
 
   enqueueJob("process_inbound_message", payload).catch((err) => {
     console.error("Failed to enqueue inbound message job:", err);
+  });
+});
+
+// POST /webhook/instagram — same fast-ack-then-queue shape as WhatsApp
+// above, tagged with channel: "instagram" so the job handler resolves the
+// seller by their linked Instagram account instead of a phone number.
+// Always verified as a Meta signature (never Twilio) — Instagram has no
+// Twilio path, so this must not follow WHATSAPP_PROVIDER's dispatch.
+router.post("/instagram", verifyMetaSignature, (req, res) => {
+  res.status(200).end();
+
+  const payload = { ...normalizeInstagramPayload(req.body), channel: "instagram" };
+
+  enqueueJob("process_inbound_message", payload).catch((err) => {
+    console.error("Failed to enqueue inbound Instagram message job:", err);
   });
 });
 

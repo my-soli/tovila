@@ -1,19 +1,24 @@
 const prisma = require("../db/client");
 
 /**
- * Finds the most recent conversation for a given seller + customer phone
- * pair, or creates a new one. The same customer messaging two different
- * sellers gets two separate conversations.
+ * Finds the most recent conversation for a given seller + customer
+ * identifier pair, or creates a new one. The same customer messaging two
+ * different sellers gets two separate conversations. `customerPhone` holds
+ * whichever channel's own identifier (a phone number for WhatsApp, an
+ * Instagram-scoped ID for Instagram) — the column name predates
+ * multi-channel support but the value is channel-appropriate.
+ * `channel` defaults to "whatsapp" so existing WhatsApp/Twilio call sites
+ * are unaffected.
  */
-async function getOrCreateConversation(sellerId, customerPhone) {
+async function getOrCreateConversation(sellerId, customerPhone, channel = "whatsapp") {
   let conversation = await prisma.conversation.findFirst({
-    where: { sellerId, customerPhone },
+    where: { sellerId, customerPhone, channel },
     orderBy: { createdAt: "desc" },
   });
 
   if (!conversation) {
     conversation = await prisma.conversation.create({
-      data: { sellerId, customerPhone },
+      data: { sellerId, customerPhone, channel },
     });
   }
 
@@ -87,6 +92,7 @@ async function listConversationsWithPreview(sellerId) {
       id: c.id,
       customerPhone: c.customerPhone,
       status: c.status,
+      channel: c.channel,
       createdAt: c.createdAt,
       lastMessage: c.messages[0] || null,
       lastActivityAt: c.messages[0]?.timestamp || c.createdAt,

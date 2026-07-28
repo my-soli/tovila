@@ -47,4 +47,13 @@ async function markLeadPaid(leadId, paid) {
   });
 }
 
-module.exports = { saveLead, listLeads, updateLeadStatus, markLeadPaid };
+/** The sellerId a lead belongs to, for ownership checks before a seller-session mutates it — null if the lead doesn't exist. */
+async function getLeadOwnerSellerId(leadId) {
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    select: { conversation: { select: { sellerId: true } } },
+  });
+  return lead?.conversation.sellerId || null;
+}
+
+module.exports = { saveLead, listLeads, updateLeadStatus, markLeadPaid, getLeadOwnerSellerId };

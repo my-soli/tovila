@@ -4,9 +4,10 @@ const COOKIE_NAME = "tovila_session";
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
- * Single shared username/password for the whole dashboard (no per-user
- * accounts) — same credential model as the earlier Basic Auth version, just
- * presented as a real login page instead of a browser auth dialog.
+ * Single shared admin username/password (env vars) that can see and switch
+ * between every seller — distinct from a seller's own self-serve account
+ * (see hashPassword/verifyPassword below). Same credential model as the
+ * earlier Basic Auth version, just presented as a real login page.
  */
 function verifyCredentials(username, password) {
   const expectedUser = process.env.DASHBOARD_USERNAME;
@@ -19,16 +20,46 @@ function verifyCredentials(username, password) {
   return username === expectedUser && password === expectedPass;
 }
 
+const SCRYPT_KEYLEN = 64;
+
+/** Hashes a seller's self-serve account password as "salt:hashHex" — no bcrypt/argon2 dependency needed for Node's built-in scrypt. */
+function hashPassword(plain) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(plain, salt, SCRYPT_KEYLEN).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(plain, stored) {
+  if (!stored) return false;
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+
+  const candidate = crypto.scryptSync(plain, salt, SCRYPT_KEYLEN);
+  const expected = Buffer.from(hash, "hex");
+  return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+}
+
+/** Random token for the email-verification link — collision-safe enough via the DB's unique constraint. */
+function generateVerificationToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
 function sign(value) {
   const secret = process.env.SESSION_SECRET;
   if (!secret) throw new Error("SESSION_SECRET is not set — check your .env");
   return crypto.createHmac("sha256", secret).update(value).digest("hex");
 }
 
-/** Sets the signed session cookie proving this browser has logged in, valid for SESSION_MS. */
-function setSessionCookie(res) {
+/**
+ * Sets the signed session cookie. `session` is either `{type: "admin"}`
+ * (sees/switches every seller) or `{type: "seller", sellerId}` (pinned to
+ * that seller only) — see src/routes/dashboard.js for how each is resolved.
+ */
+function setSessionCookie(res, session) {
   const expiry = Date.now() + SESSION_MS;
-  const value = `${expiry}.${sign(String(expiry))}`;
+  const sellerId = session.sellerId || "";
+  const payload = `${session.type}:${sellerId}:${expiry}`;
+  const value = `${payload}:${sign(payload)}`;
 
   res.cookie(COOKIE_NAME, value, {
     httpOnly: true,
@@ -54,29 +85,40 @@ function parseCookies(header) {
   return cookies;
 }
 
-function hasValidSession(req) {
+/** Parses and verifies the session cookie, returning {type, sellerId} or null. */
+function getSession(req) {
   const cookies = parseCookies(req.headers.cookie);
   const raw = cookies[COOKIE_NAME];
-  if (!raw) return false;
+  if (!raw) return null;
 
-  const [expiryStr, signature] = raw.split(".");
-  if (!expiryStr || !signature) return false;
+  const parts = raw.split(":");
+  if (parts.length !== 4) return null;
+  const [type, sellerId, expiryStr, signature] = parts;
 
   const expiry = Number(expiryStr);
-  if (!Number.isFinite(expiry) || Date.now() > expiry) return false;
+  if (!Number.isFinite(expiry) || Date.now() > expiry) return null;
+  if (type !== "admin" && type !== "seller") return null;
+  if (type === "seller" && !sellerId) return null;
 
+  const payload = `${type}:${sellerId}:${expiryStr}`;
   let expected;
   try {
-    expected = sign(expiryStr);
+    expected = sign(payload);
   } catch {
-    return false;
+    return null;
   }
 
   const sigBuffer = Buffer.from(signature);
   const expectedBuffer = Buffer.from(expected);
-  return (
-    sigBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(sigBuffer, expectedBuffer)
-  );
+  const valid =
+    sigBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(sigBuffer, expectedBuffer);
+
+  if (!valid) return null;
+  return { type, sellerId: sellerId || null };
+}
+
+function hasValidSession(req) {
+  return getSession(req) !== null;
 }
 
 /** Gates every dashboard route — redirects to the login page (preserving where the seller was headed) instead of a browser auth prompt. */
@@ -88,16 +130,24 @@ function dashboardAuth(req, res, next) {
     return res.status(500).send("Dashboard auth is not configured.");
   }
 
-  if (hasValidSession(req)) return next();
+  const session = getSession(req);
+  if (!session) {
+    const next_ = encodeURIComponent(req.originalUrl);
+    return res.redirect(`/login?next=${next_}`);
+  }
 
-  const next_ = encodeURIComponent(req.originalUrl);
-  return res.redirect(`/login?next=${next_}`);
+  req.session = session;
+  next();
 }
 
 module.exports = {
   dashboardAuth,
   verifyCredentials,
+  hashPassword,
+  verifyPassword,
+  generateVerificationToken,
   setSessionCookie,
   clearSessionCookie,
   hasValidSession,
+  getSession,
 };

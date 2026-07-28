@@ -58,4 +58,4 @@ function verifyWebhookSignature(req, res, next) {
   return verifyMetaSignature(req, res, next);
 }
 
-module.exports = { verifyWebhookSignature };
+module.exports = { verifyWebhookSignature, verifyMetaSignature };

@@ -4,24 +4,43 @@ const {
   getConversationWithMessages,
   setConversationStatus,
 } = require("../services/conversation");
-const { listLeads, updateLeadStatus, markLeadPaid } = require("../services/leads");
-const { listSellers, updateSeller, createSeller } = require("../services/sellers");
+const {
+  listLeads,
+  updateLeadStatus,
+  markLeadPaid,
+  getLeadOwnerSellerId,
+} = require("../services/leads");
+const { listSellers, getSellerById, updateSeller, createSeller } = require("../services/sellers");
 const { isWithin24hWindow } = require("../services/messagingWindow");
 const { notifyCustomerOfStatusChange } = require("../services/orderNotifications");
 const { getSellerStats } = require("../services/stats");
 
 const router = express.Router();
 
-// Resolves which seller the dashboard is currently viewing from ?sellerId=,
-// defaulting to the first seller alphabetically. Every view gets `sellers`
-// and `currentSeller` in scope automatically via res.locals, so the header's
-// nav links and seller switcher can render without each route wiring it up.
-// /onboarding is exempt from requiring an existing seller, since it's how
-// you create the very first one.
+// Resolves which seller the dashboard is currently viewing, differently per
+// session type (set by dashboardAuth in src/middleware/auth.js):
+//  - "admin" (the shared operator login) — any seller via ?sellerId=,
+//    defaulting to the first alphabetically; the full list is exposed so
+//    the header can render the seller switcher.
+//  - "seller" (a self-serve account) — always pinned to their own record,
+//    ?sellerId= is ignored entirely so one seller can never view another's
+//    data; no switcher (res.locals.sellers stays empty).
+// /onboarding is admin-only (see the route below) — self-serve signup is
+// how a seller session's very first record gets created.
 router.use(async (req, res, next) => {
-  const sellers = await listSellers();
-  const requestedId = req.query.sellerId;
-  const currentSeller = sellers.find((s) => s.id === requestedId) || sellers[0] || null;
+  const isAdminSession = req.session.type === "admin";
+  res.locals.isAdminSession = isAdminSession;
+
+  let sellers = [];
+  let currentSeller = null;
+
+  if (isAdminSession) {
+    sellers = await listSellers();
+    const requestedId = req.query.sellerId;
+    currentSeller = sellers.find((s) => s.id === requestedId) || sellers[0] || null;
+  } else {
+    currentSeller = await getSellerById(req.session.sellerId);
+  }
 
   res.locals.sellers = sellers;
   res.locals.currentSeller = currentSeller;
@@ -64,8 +83,13 @@ router.get("/conversations/:id", async (req, res) => {
     return res.status(404).render("not-found", { message: "Conversation not found." });
   }
 
-  // A conversation belongs to whichever seller it was created under —
-  // reflect that in the nav/switcher regardless of the ?sellerId= in the URL.
+  // A seller session may only ever view its own conversations — a raw ID
+  // in the URL must not leak another seller's customer thread. An admin
+  // session can view any conversation, and the nav/switcher reflects
+  // whichever seller it actually belongs to (regardless of ?sellerId=).
+  if (!res.locals.isAdminSession && conversation.seller.id !== req.currentSeller.id) {
+    return res.status(404).render("not-found", { message: "Conversation not found." });
+  }
   res.locals.currentSeller = conversation.seller;
 
   const withinWindow = await isWithin24hWindow(conversation.id);
@@ -75,6 +99,14 @@ router.get("/conversations/:id", async (req, res) => {
 
 // Resolves a flagged conversation back to normal handling.
 router.post("/conversations/:id/resolve", async (req, res) => {
+  const conversation = await getConversationWithMessages(req.params.id);
+  if (!conversation) {
+    return res.status(404).render("not-found", { message: "Conversation not found." });
+  }
+  if (!res.locals.isAdminSession && conversation.seller.id !== req.currentSeller.id) {
+    return res.status(404).render("not-found", { message: "Conversation not found." });
+  }
+
   await setConversationStatus(req.params.id, "open");
   res.redirect(`/conversations/${req.params.id}`);
 });
@@ -85,18 +117,33 @@ router.get("/leads", async (req, res) => {
 });
 
 router.post("/leads/:id/status", async (req, res) => {
+  const ownerSellerId = await getLeadOwnerSellerId(req.params.id);
+  if (!ownerSellerId || (!res.locals.isAdminSession && ownerSellerId !== req.currentSeller.id)) {
+    return res.status(404).render("not-found", { message: "Order not found." });
+  }
+
   const lead = await updateLeadStatus(req.params.id, req.body.status);
   await notifyCustomerOfStatusChange(lead);
   res.redirect(`/leads?sellerId=${req.currentSeller.id}`);
 });
 
 router.post("/leads/:id/paid", async (req, res) => {
+  const ownerSellerId = await getLeadOwnerSellerId(req.params.id);
+  if (!ownerSellerId || (!res.locals.isAdminSession && ownerSellerId !== req.currentSeller.id)) {
+    return res.status(404).render("not-found", { message: "Order not found." });
+  }
+
   await markLeadPaid(req.params.id, req.body.paid === "true");
   res.redirect(`/leads?sellerId=${req.currentSeller.id}`);
 });
 
 router.get("/products", (req, res) => {
-  res.render("products", { seller: req.currentSeller, saved: req.query.saved === "1" });
+  res.render("products", {
+    seller: req.currentSeller,
+    saved: req.query.saved === "1",
+    error: req.query.error || null,
+    welcome: req.query.welcome === "1",
+  });
 });
 
 // Simple full-replace save: the form posts back the whole catalog/FAQ list
@@ -104,15 +151,24 @@ router.get("/products", (req, res) => {
 router.post("/products", async (req, res) => {
   const body = req.body;
   const sellerId = req.currentSeller.id;
+  const whatsappNumber = (body.whatsappNumber || "").trim();
 
-  await updateSeller(sellerId, {
-    name: (body.sellerName || req.currentSeller.name).trim(),
-    sellerNotificationEmail: (body.sellerNotificationEmail || "").trim() || null,
-    mpesaTillNumber: (body.mpesaTillNumber || "").trim() || null,
-    deliveryInfo: parseDeliveryInfoFromBody(body),
-    products: parseProductsFromBody(body),
-    faqs: parseFaqsFromBody(body),
-  });
+  try {
+    await updateSeller(sellerId, {
+      name: (body.sellerName || req.currentSeller.name).trim(),
+      whatsappNumber: whatsappNumber || null,
+      sellerNotificationEmail: (body.sellerNotificationEmail || "").trim() || null,
+      mpesaTillNumber: (body.mpesaTillNumber || "").trim() || null,
+      deliveryInfo: parseDeliveryInfoFromBody(body),
+      products: parseProductsFromBody(body),
+      faqs: parseFaqsFromBody(body),
+    });
+  } catch (err) {
+    if (err.code === "P2002") {
+      return res.redirect(`/products?sellerId=${sellerId}&error=whatsapp_taken`);
+    }
+    throw err;
+  }
 
   res.redirect(`/products?sellerId=${sellerId}&saved=1`);
 });
@@ -122,11 +178,16 @@ router.get("/stats", async (req, res) => {
   res.render("stats", { stats });
 });
 
+// Manually adding a seller stays an admin-only tool — self-serve signup
+// (/signup, see src/routes/marketing.js) is how a seller session's own
+// record gets created.
 router.get("/onboarding", (req, res) => {
+  if (!res.locals.isAdminSession) return res.redirect("/overview");
   res.render("onboarding", {});
 });
 
 router.post("/onboarding", async (req, res) => {
+  if (!res.locals.isAdminSession) return res.redirect("/overview");
   const body = req.body;
 
   const seller = await createSeller({

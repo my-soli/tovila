@@ -9,15 +9,34 @@ datasource db {
 }
 
 model Seller {
-  id                      String   @id @default(uuid())
+  id                      String    @id @default(uuid())
   name                    String
-  whatsappNumber          String   @unique @map("whatsapp_number")
+  whatsappNumber          String?   @unique @map("whatsapp_number")
   products                Json
-  deliveryInfo            Json     @map("delivery_info")
+  deliveryInfo            Json      @map("delivery_info")
   faqs                    Json
-  sellerNotificationEmail String?  @map("seller_notification_email")
-  mpesaTillNumber         String?  @map("mpesa_till_number")
-  createdAt               DateTime @default(now()) @map("created_at")
+  sellerNotificationEmail String?   @map("seller_notification_email")
+  mpesaTillNumber         String?   @map("mpesa_till_number")
+  createdAt               DateTime  @default(now()) @map("created_at")
+
+  // Self-serve account (Phase 7) — nullable so existing admin-only demo
+  // sellers keep working unchanged; only sellers who signed up themselves
+  // have these set.
+  email                    String?   @unique
+  passwordHash             String?   @map("password_hash")
+  emailVerified            Boolean   @default(false) @map("email_verified")
+  emailVerificationToken   String?   @unique @map("email_verification_token")
+  emailVerificationExpires DateTime? @map("email_verification_expires")
+  trialStartedAt           DateTime? @map("trial_started_at")
+  trialEndsAt              DateTime? @map("trial_ends_at")
+
+  // Instagram channel (Phase 7) — mirrors whatsappNumber's role.
+  instagramAccountId    String? @unique @map("instagram_account_id")
+  instagramAccessToken  String? @map("instagram_access_token")
+
+  // TikTok channel — scaffolded, not yet a working integration.
+  tiktokAccountId       String? @unique @map("tiktok_account_id")
+  tiktokAccessToken     String? @map("tiktok_access_token")
 
   conversations Conversation[]
   notifications Notification[]
@@ -31,6 +50,7 @@ model Conversation {
   seller        Seller   @relation(fields: [sellerId], references: [id])
   customerPhone String   @map("customer_phone")
   status        String   @default("open") // "open" | "needs_attention" | "closed"
+  channel       String   @default("whatsapp") // "whatsapp" | "instagram" | "tiktok"
   createdAt     DateTime @default(now()) @map("created_at")
 
   messages      Message[]
@@ -40,6 +60,7 @@ model Conversation {
   @@index([customerPhone])
   @@index([sellerId])
   @@index([status])
+  @@index([channel])
   @@map("conversations")
 }
 
