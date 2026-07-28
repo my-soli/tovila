@@ -11,7 +11,7 @@
 
     <form method="POST" action="/login" class="login-form">
       <input type="hidden" name="next" value="<%= next %>" />
-      <label>Username
+      <label>Email
         <input type="text" name="username" required autofocus />
       </label>
       <label>Password
@@ -20,7 +20,10 @@
       <button type="submit">Log in</button>
     </form>
 
-    <a href="/" class="back-home">&larr; Back to home</a>
+    <div class="auth-links">
+      <a href="/signup" class="back-home">Don't have an account? Start your free trial</a>
+      <a href="/" class="back-home">&larr; Back to home</a>
+    </div>
   </div>
 </div>
 

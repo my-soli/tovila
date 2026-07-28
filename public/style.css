@@ -180,6 +180,17 @@ a:hover { color: var(--primary-dark); }
   color: #fff;
 }
 
+.nav-cta {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.nav-cta:hover {
+  background: var(--primary-dark);
+  color: #fff;
+}
+
 .trial-banner {
   background: var(--primary-soft);
   color: var(--primary-dark);
@@ -1452,12 +1463,22 @@ button[type="submit"]:hover { background: var(--primary-dark); }
 
 .pricing-features li:last-child { border-bottom: none; }
 
+.auth-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
 .back-home {
   display: inline-block;
   margin-top: var(--sp-4);
   font-size: 0.85rem;
   color: var(--muted);
   text-decoration: none;
+}
+
+.auth-links .back-home:not(:first-child) {
+  margin-top: 0;
 }
 
 .back-home:hover {
