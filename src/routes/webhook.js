@@ -25,9 +25,13 @@ router.get("/", (req, res) => {
 // POST /webhook — incoming WhatsApp messages / status updates. Both
 // providers expect a fast 2xx or they'll retry (and redeliver) — so we ack
 // immediately and hand the payload off to the job queue (src/jobs/) for
-// actual processing, with retries on failure.
+// actual processing, with retries on failure. Twilio's webhook contract
+// treats a non-empty response body as TwiML to act on — res.sendStatus(200)
+// sends the literal text "OK", which Twilio can misinterpret as a reply to
+// send back to the customer. An empty body avoids that entirely; the real
+// reply is sent later via the Twilio REST API (src/whatsapp/providers/twilio.js).
 router.post("/", verifyWebhookSignature, (req, res) => {
-  res.sendStatus(200);
+  res.status(200).end();
 
   const payload =
     process.env.WHATSAPP_PROVIDER === "twilio" ? normalizeTwilioPayload(req.body) : req.body;
