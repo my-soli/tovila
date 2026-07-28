@@ -906,6 +906,7 @@ button[type="submit"]:hover { background: var(--primary-dark); }
   .hero-visual { order: -1; }
   .hero-copy h1 { font-size: 2.2rem; }
   .hero-sub { max-width: none; }
+  .hero-mascot { left: 8px; width: 100px; }
 }
 
 @media (max-width: 360px) {
