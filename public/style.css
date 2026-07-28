@@ -238,6 +238,11 @@ a:hover { color: var(--primary-dark); }
   padding: var(--sp-8) var(--sp-8);
 }
 
+@media (max-width: 640px) {
+  .container { padding: var(--sp-4); }
+  .channel-banner { padding: var(--sp-3) var(--sp-4); }
+}
+
 h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 var(--sp-4); }
 h2 { font-size: 1.05rem; font-weight: 600; margin: var(--sp-6) 0 var(--sp-2); }
 
@@ -779,6 +784,8 @@ button[type="submit"]:hover { background: var(--primary-dark); }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-8);
 }
 
@@ -790,7 +797,9 @@ button[type="submit"]:hover { background: var(--primary-dark); }
 .public-nav {
   display: flex;
   align-items: center;
-  gap: var(--sp-6);
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-4) var(--sp-6);
 }
 
 .public-nav a:not(.btn-outline) {
@@ -808,6 +817,11 @@ button[type="submit"]:hover { background: var(--primary-dark); }
   max-width: 1080px;
   margin: 0 auto;
   padding: 0 var(--sp-8);
+}
+
+@media (max-width: 640px) {
+  .public-header { padding: var(--sp-3) var(--sp-4); }
+  .public-main { padding: 0 var(--sp-4); }
 }
 
 .btn-primary {
@@ -890,6 +904,13 @@ button[type="submit"]:hover { background: var(--primary-dark); }
 @media (max-width: 800px) {
   .hero { grid-template-columns: 1fr; text-align: center; }
   .hero-visual { order: -1; }
+  .hero-copy h1 { font-size: 2.2rem; }
+  .hero-sub { max-width: none; }
+}
+
+@media (max-width: 360px) {
+  .phone-mockup { width: 100%; max-width: 280px; }
+  .hero-mascot { display: none; }
 }
 
 .hero-copy h1 {
