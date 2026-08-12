@@ -3,26 +3,26 @@
 <h1>Orders</h1>
 
 <% if (leads.length === 0) { %>
-  <p class="empty">No orders captured yet.</p>
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><rect x="5" y="4" width="14" height="17" rx="2" stroke="#1F7A54" stroke-width="2"/><path d="M9 3h6v3H9V3Z" fill="#1F7A54"/></svg>
+    </div>
+    <h3>No orders yet</h3>
+    <p>Orders your AI agent captures from chats will show up here.</p>
+  </div>
 <% } else { %>
-  <div class="table-scroll">
-  <table class="list-table">
-    <thead>
-      <tr>
-        <th>Item</th><th>Qty</th><th>Variant</th><th>Delivery</th>
-        <th>Customer</th><th>Phone</th><th>Status</th><th>Paid</th><th>Created</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% leads.forEach(l => { %>
-        <tr>
-          <td><%= l.item %></td>
-          <td><%= l.quantity %></td>
-          <td><%= l.variant || '—' %></td>
-          <td><%= l.deliveryLocation %></td>
-          <td><%= l.customerName %></td>
-          <td><%= l.conversation.customerPhone %></td>
-          <td>
+  <div class="card-list">
+    <% leads.forEach(l => { %>
+      <div class="order-card">
+        <div class="card-row-top">
+          <div class="card-row-main">
+            <div class="card-row-title"><%= l.quantity %>x <%= l.item %><% if (l.variant) { %> (<%= l.variant %>)<% } %></div>
+            <div class="card-row-meta"><%= l.customerName %> &middot; <%= l.conversation.customerPhone %></div>
+          </div>
+          <div class="card-row-meta nowrap"><%= l.deliveryLocation %></div>
+        </div>
+        <div class="card-row-footer">
+          <div class="card-row-footer-left">
             <form method="POST" action="/leads/<%= l.id %>/status?sellerId=<%= currentSeller.id %>" class="inline-form">
               <select name="status" onchange="this.form.submit()">
                 <% ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].forEach(s => { %>
@@ -30,20 +30,17 @@
                 <% }) %>
               </select>
             </form>
-          </td>
-          <td>
             <form method="POST" action="/leads/<%= l.id %>/paid?sellerId=<%= currentSeller.id %>" class="inline-form">
               <input type="hidden" name="paid" value="<%= l.paid ? 'false' : 'true' %>" />
               <button type="submit" class="paid-toggle <%= l.paid ? 'is-paid' : '' %>">
                 <%= l.paid ? 'Paid ✓' : 'Mark paid' %>
               </button>
             </form>
-          </td>
-          <td class="nowrap"><%= new Date(l.createdAt).toLocaleString() %></td>
-        </tr>
-      <% }) %>
-    </tbody>
-  </table>
+          </div>
+          <div class="card-row-meta nowrap"><%= new Date(l.createdAt).toLocaleString() %></div>
+        </div>
+      </div>
+    <% }) %>
   </div>
 <% } %>
 

@@ -3,30 +3,35 @@
 <h1>Conversations</h1>
 
 <% if (conversations.length === 0) { %>
-  <p class="empty">No conversations yet. Once WhatsApp messages come in (or you run <code>npm run seed</code>), they'll show up here.</p>
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><path d="M4 5h16v11H9l-4 4V5Z" stroke="#1F7A54" stroke-width="2" stroke-linejoin="round"/></svg>
+    </div>
+    <h3>No conversations yet</h3>
+    <p>Once WhatsApp messages come in (or you run <code>npm run seed</code>), they'll show up here.</p>
+  </div>
 <% } else { %>
-  <div class="table-scroll">
-  <table class="list-table">
-    <thead>
-      <tr><th>Customer</th><th>Status</th><th>Last message</th><th>When</th></tr>
-    </thead>
-    <tbody>
-      <% conversations.forEach(c => { %>
-        <tr class="clickable-row" onclick="window.location='/conversations/<%= c.id %>'">
-          <td><%= c.customerPhone %> <span class="channel-tag channel-<%= c.channel %>"><%= c.channel %></span></td>
-          <td><span class="status-badge status-<%= c.status %>"><%= c.status.replace('_', ' ') %></span></td>
-          <td class="preview">
-            <% if (c.lastMessage) { %>
-              <%= c.lastMessage.sender === 'agent' ? 'You: ' : '' %><%= c.lastMessage.content %>
-            <% } else { %>
-              &mdash;
-            <% } %>
-          </td>
-          <td class="nowrap"><%= new Date(c.lastActivityAt).toLocaleString() %></td>
-        </tr>
-      <% }) %>
-    </tbody>
-  </table>
+  <div class="card-list">
+    <% conversations.forEach(c => { %>
+      <a class="conversation-card" href="/conversations/<%= c.id %>">
+        <div class="card-row-top">
+          <div class="card-row-main">
+            <div class="card-row-title"><%= c.customerPhone %> <span class="channel-tag channel-<%= c.channel %>"><%= c.channel %></span></div>
+            <div class="card-row-meta">
+              <% if (c.lastMessage) { %>
+                <%= c.lastMessage.sender === 'agent' ? 'You: ' : '' %><%= c.lastMessage.content %>
+              <% } else { %>
+                &mdash;
+              <% } %>
+            </div>
+          </div>
+          <span class="status-badge status-<%= c.status %>"><%= c.status.replace('_', ' ') %></span>
+        </div>
+        <div class="card-row-footer">
+          <div class="card-row-meta nowrap" style="margin-left: auto;"><%= new Date(c.lastActivityAt).toLocaleString() %></div>
+        </div>
+      </a>
+    <% }) %>
   </div>
 <% } %>
 

@@ -12,11 +12,17 @@
   </div>
 
   <div class="stats-grid" style="margin-bottom: var(--sp-6);">
-    <div class="stat-tile">
+    <div class="stat-tile stat-tile-primary">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 5h16v11H9l-4 4V5Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+      </div>
       <div class="stat-value"><%= stats.totalConversations %></div>
       <div class="stat-label">Total conversations</div>
     </div>
-    <div class="stat-tile">
+    <div class="stat-tile stat-tile-tertiary">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9" stroke="#1C1C1E" stroke-width="2"/><path d="M12 7v5l3 3" stroke="#1C1C1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
       <div class="stat-value">
         <% if (stats.avgResponseTimeSeconds === null) { %>
           &mdash;
@@ -28,11 +34,17 @@
       </div>
       <div class="stat-label">Avg. response time</div>
     </div>
-    <div class="stat-tile">
+    <div class="stat-tile stat-tile-accent">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="4" y="5" width="16" height="12" rx="2" stroke="#fff" stroke-width="2"/><path d="M8 9h8M8 12h5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
       <div class="stat-value"><%= stats.messagesThisWeek %></div>
       <div class="stat-label">Messages this week</div>
     </div>
-    <div class="stat-tile">
+    <div class="stat-tile stat-tile-primary">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="4" y="5" width="16" height="12" rx="2" stroke="#fff" stroke-width="2"/><path d="M8 9h8M8 12h5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
       <div class="stat-value"><%= stats.messagesThisMonth %></div>
       <div class="stat-label">Messages this month</div>
     </div>
@@ -51,7 +63,10 @@
   </div>
 
   <div class="stats-grid" style="margin-bottom: var(--sp-6); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
-    <div class="stat-tile">
+    <div class="stat-tile stat-tile-accent">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="5" y="4" width="14" height="17" rx="2" stroke="#fff" stroke-width="2"/><path d="M9 3h6v3H9V3Z" fill="#fff"/></svg>
+      </div>
       <div class="stat-value"><%= stats.totalLeads %></div>
       <div class="stat-label">Orders captured</div>
     </div>
